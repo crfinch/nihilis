@@ -1,0 +1,30 @@
+# Core Dependencies
+python-tcod>=11.19        # Base game engine
+numpy>=1.24.0             # Required for TCOD and numerical computations
+pandas>=2.0.0             # For data management and analysis
+
+# Development Tools
+pytest>=7.3.1             # Testing framework
+pytest-cov>=4.1.0         # Test coverage reporting
+black>=23.3.0             # Code formatting
+pylint>=2.17.0            # Code quality checking
+mypy>=1.5.1              # Static type checking
+
+# Build Tools
+pyinstaller>=5.13.0       # For creating standalone executables
+wheel>=0.41.0             # For package management
+setuptools>=68.0.0        # For package management
+
+# Documentation
+pdoc3>=0.10.0             # Documentation generator
+mkdocs>=1.5.0             # Documentation site generator
+mkdocs-material>=9.2.0    # Documentation theme
+
+# Debug and Profiling
+memory-profiler>=0.61.0   # Memory usage analysis
+line-profiler>=4.0.3      # Line-by-line profiling
+debugpy>=1.6.7            # Debug adapter protocol support
+
+# Optional but Recommended
+rich>=13.5.2              # Better REPL and debugging output
+tqdm>=4.65.0              # Progress bars for long-running operations

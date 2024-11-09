@@ -5,8 +5,8 @@ from typing import Optional, Dict, Any, Set
 import tcod.event
 from dataclasses import dataclass
 from src.utils.logger_config import logger
-from engine.message_manager import MessageManager
-from engine.game_state_manager import GameStateManager
+from src.engine.message_manager import MessageManager
+from src.engine.game_state_manager import GameStateManager
 
 
 class GameState(Enum):

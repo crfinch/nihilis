@@ -20,10 +20,10 @@ class DisplayManager:
     
 	def __init__(self, message_manager: Optional['MessageManager'] = None):
 		"""Initialize the display manager and create console layers."""
-		# Load the larger tileset
-		tcod.tileset.set_default(tcod.tileset.load_tilesheet(
+		# Load the tileset
+		self.tileset = tcod.tileset.load_tilesheet(
 			"resources/fonts/terminal16x16_gs_ro.png", 16, 16, tcod.tileset.CHARMAP_CP437
-		))
+		)
 		
 		# initialize the message manager reference.
 		self.message_manager = message_manager
@@ -35,7 +35,7 @@ class DisplayManager:
 			title="Nihilis",
 			vsync=True,
 			sdl_window_flags=tcod.context.SDL_WINDOW_RESIZABLE,
-			tileset=tcod.tileset.get_default()
+			tileset=self.tileset
 			)
 
 			# Verify context initialization
@@ -106,3 +106,4 @@ class DisplayManager:
 	def close(self) -> None:
 		"""Clean up and close the display."""
 		self.context.close()
+

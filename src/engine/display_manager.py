@@ -30,7 +30,12 @@ class DisplayManager:
 			title="Nihilis",
 			vsync=True,
 			sdl_window_flags=tcod.context.SDL_WINDOW_RESIZABLE,
+			tileset=tcod.tileset.get_default(),
 		)
+
+		# Verify context initialization
+		if not self.context:
+			raise RuntimeError("Failed to initialize TCOD context")
 		
 		# Create console layers
 		self.consoles: Dict[str, tcod.console.Console] = {

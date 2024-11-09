@@ -4,11 +4,22 @@ import tcod
 from engine.display_manager import DisplayManager
 from engine.input_handler import InputHandler, GameState
 from utils.logger_config import logger
+from engine.message_manager import MessageManager
 
 def main() -> None:
 	"""Main game entry point."""
+	message_manager = MessageManager()
 	display_manager = DisplayManager()
-	input_handler = InputHandler(display_manager.context)
+	input_handler = InputHandler(
+		display_manager.context,
+		message_manager=message_manager,
+		debug=False  # Enable debug mode
+	)
+
+	message_manager.add_message("You enter the region.", fg=(255, 255, 255))	
+	message_manager.add_message("You see BIG mountains.", fg=(192, 192, 192))
+	message_manager.add_message("A cool breeze blows.", fg=(128, 192, 255))	
+	message_manager.add_message("Arte is a really serious damned hottie!", fg=(255, 192, 255))
     
 	try:
 		while True:
@@ -50,10 +61,8 @@ def main() -> None:
 					message_console.height,
 					title=" Messages "
 				)
-				# Add some sample messages with different colors
-				message_console.print(2, 2, "You enter the region.", fg=(255, 255, 255))
-				message_console.print(2, 3, "You see mountains.", fg=(192, 192, 192))
-				message_console.print(2, 4, "A cool breeze blows.", fg=(128, 192, 255))
+				# print the message manager's messages to the message console.
+				message_manager.render_messages(message_console)
 			
 			# Render everything to the screen
 			display_manager.render()
@@ -72,21 +81,18 @@ def main() -> None:
 					if action.action_type == "quit":
 						raise SystemExit()
 					elif action.action_type == "move":
-						# Add movement info to message log
-						if message_console:
-							dx, dy = action.params["dx"], action.params["dy"]
-							direction = ""
-							if dy < 0: direction = "north"
-							elif dy > 0: direction = "south"
-							if dx < 0: direction = f"west{direction}"
-							elif dx > 0: direction = f"east{direction}"
-							
-							sprint = "sprinting " if action.params.get("sprint") else ""
-							message_console.print(
-								2, 6, 
-								f"Moving {sprint}{direction}...", 
-								fg=(200, 200, 200)
-							)
+						dx, dy = action.params["dx"], action.params["dy"]
+						direction = ""
+						if dy < 0: direction = "north"
+						elif dy > 0: direction = "south"
+						if dx < 0: direction = f"{direction}west"
+						elif dx > 0: direction = f"{direction}east"
+						
+						sprint = "sprinting " if action.params.get("sprint") else ""
+						message_manager.add_message(
+							f"Moving {sprint}{direction}...",
+							fg=(200, 200, 200)
+						)
 					elif action.action_type == "mouse_move":
 						# Update status bar with mouse position
 						if status_console:

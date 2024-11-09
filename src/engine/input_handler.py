@@ -5,6 +5,8 @@ from typing import Optional, Dict, Any, Set
 import tcod.event
 from dataclasses import dataclass
 from src.utils.logger_config import logger
+from engine.message_manager import MessageManager
+
 
 class GameState(Enum):
 	"""Enum representing different game states that affect input handling."""
@@ -27,14 +29,16 @@ class GameAction:
 
 class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 	"""Handles input events and converts them into game actions."""
-    
-	def __init__(self, context: tcod.context.Context):
+	
+	def __init__(self, context: tcod.context.Context, message_manager: Optional['MessageManager'] = None, debug: bool = False):
 		super().__init__()
 		self.context = context
-		self.current_state = GameState.MAIN_MENU
+		self.current_state = GameState.GAME_WORLD
+		self.message_manager = message_manager
+		self.debug = debug
 		# Track currently pressed keys to handle multiple key inputs
 		self.pressed_keys: Set[int] = set()
-
+        
 		# Define key mappings - can be loaded from config later
 		self.MOVEMENT_KEYS = {
 			# Arrow keys
@@ -62,12 +66,22 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 			tcod.event.KeySym.F11: GameAction("toggle_fullscreen"),
         }
 
+	def dispatch(self, event: tcod.event.Event) -> Optional[GameAction]:
+		"""Override dispatch to include debug information."""
+		action = super().dispatch(event)
+		if action and self.debug:
+			self._debug_message(f"Input: {event.__class__.__name__} -> Action: {action.action_type} - Params: {action.params}")
+		return action
+
 	def ev_quit(self, event: tcod.event.Quit) -> Optional[GameAction]:
 		"""Handle window close button."""
 		return GameAction("quit")
 
 	def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[GameAction]:
 		"""Handle key press events based on current game state."""
+		if self.debug:
+			self._debug_message(f"Key pressed: {event.sym}")
+		
 		key = event.sym
 		self.pressed_keys.add(key)
 
@@ -90,7 +104,7 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 			return self._handle_dialogue(key)
 		elif self.current_state == GameState.PAUSED:
 			return self._handle_paused(key)
-        
+			
 		return None
 
 	def ev_keyup(self, event: tcod.event.KeyUp) -> None:
@@ -101,12 +115,9 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		"""Handle mouse movement."""
 		try:
 			return GameAction("mouse_move", {
-				# "x": event.tile.x,
 				"x": event.motion.x,	
-				# "y": event.tile.y,
 				"y": event.motion.y,
-				# "pixel_x": event.pixel.x,
-				# "pixel_y": event.pixel.y
+
 				"pixel_x": event.position.x,
 				"pixel_y": event.position.y
 			})
@@ -119,8 +130,6 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		try:
 			return GameAction("mouse_click", {
 				"button": event.button,
-				# "x": event.tile.x,
-				# "y": event.tile.y
 				"x": event.position.x,
 				"y": event.position.y
 			})
@@ -193,3 +202,8 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 	def set_game_state(self, new_state: GameState) -> None:
 		"""Change the current game state."""
 		self.current_state = new_state
+
+	def _debug_message(self, message: str) -> None:
+		"""Send debug messages to the message manager if debug mode is enabled."""
+		if self.debug and self.message_manager:
+			self.message_manager.add_message(f"DEBUG: {message}", fg=(128, 128, 255))

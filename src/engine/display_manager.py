@@ -2,6 +2,8 @@
 
 import tcod
 from typing import Dict, Optional
+from .message_manager import MessageManager
+
 
 class DisplayManager:
 	"""Manages the game's display windows and rendering."""
@@ -16,24 +18,27 @@ class DisplayManager:
 	SIDEBAR_WIDTH = 25  # Reduced from 30 to account for larger tiles
 	MINIMAP_HEIGHT = 25  # Reduced from 30 to account for larger tiles
     
-	def __init__(self):
+	def __init__(self, message_manager: Optional['MessageManager'] = None):
 		"""Initialize the display manager and create console layers."""
 		# Load the larger tileset
 		tcod.tileset.set_default(tcod.tileset.load_tilesheet(
 			"resources/fonts/terminal16x16_gs_ro.png", 16, 16, tcod.tileset.CHARMAP_CP437
 		))
 		
-		# Create the main window
+		# initialize the message manager reference.
+		self.message_manager = message_manager
+			
+			# Create the main window
 		self.context = tcod.context.new(
 			columns=self.SCREEN_WIDTH,
 			rows=self.SCREEN_HEIGHT,
 			title="Nihilis",
 			vsync=True,
 			sdl_window_flags=tcod.context.SDL_WINDOW_RESIZABLE,
-			tileset=tcod.tileset.get_default(),
-		)
+			tileset=tcod.tileset.get_default()
+			)
 
-		# Verify context initialization
+			# Verify context initialization
 		if not self.context:
 			raise RuntimeError("Failed to initialize TCOD context")
 		
@@ -44,9 +49,10 @@ class DisplayManager:
 			"message_log": tcod.console.Console(self.SIDEBAR_WIDTH, self.SCREEN_HEIGHT - self.MINIMAP_HEIGHT),
 			"minimap": tcod.console.Console(self.SIDEBAR_WIDTH, self.MINIMAP_HEIGHT)
 		}
-        
-        # Create root console
+			
+			# Create root console
 		self.root_console = tcod.console.Console(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+
 
 
 	def render(self) -> None:

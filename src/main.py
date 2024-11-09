@@ -5,17 +5,28 @@ from engine.display_manager import DisplayManager
 from engine.input_handler import InputHandler, GameState
 from utils.logger_config import logger
 from engine.message_manager import MessageManager
+from engine.game_state_manager import GameStateManager
 
 def main() -> None:
 	"""Main game entry point."""
 	message_manager = MessageManager()
 	display_manager = DisplayManager()
+	state_manager = GameStateManager(message_manager)
+	state_manager.change_state(GameState.MAIN_MENU) # set initial state
+	
 	input_handler = InputHandler(
 		display_manager.context,
+		state_manager,
 		message_manager=message_manager,
-		debug=False  # Enable debug mode
+		debug=False
 	)
-
+	
+	# Register state callbacks if needed
+	state_manager.register_state_callback(
+		GameState.GAME_WORLD,
+		lambda: message_manager.add_message("Entered game world!", fg=(255, 255, 0))
+	)
+	
 	message_manager.add_message("You enter the region.", fg=(255, 255, 255))	
 	message_manager.add_message("You see BIG mountains.", fg=(192, 192, 192))
 	message_manager.add_message("A cool breeze blows.", fg=(128, 192, 255))	
@@ -80,19 +91,24 @@ def main() -> None:
 				if action:
 					if action.action_type == "quit":
 						raise SystemExit()
+					elif action.action_type == "start_game":
+						# Clear any existing messages when starting new game
+						message_manager.messages.clear()
+						message_manager.add_message("Welcome to Nihilis!", fg=(255, 223, 0))
 					elif action.action_type == "move":
-						dx, dy = action.params["dx"], action.params["dy"]
-						direction = ""
-						if dy < 0: direction = "north"
-						elif dy > 0: direction = "south"
-						if dx < 0: direction = f"{direction}west"
-						elif dx > 0: direction = f"{direction}east"
-						
-						sprint = "sprinting " if action.params.get("sprint") else ""
-						message_manager.add_message(
-							f"Moving {sprint}{direction}...",
-							fg=(200, 200, 200)
-						)
+						if state_manager.get_current_state() == GameState.GAME_WORLD:
+							dx, dy = action.params["dx"], action.params["dy"]
+							direction = ""
+							if dy < 0: direction = "north"
+							elif dy > 0: direction = "south"
+							if dx < 0: direction = f"{direction}west"
+							elif dx > 0: direction = f"{direction}east"
+							
+							sprint = "sprinting " if action.params.get("sprint") else ""
+							message_manager.add_message(
+								f"Moving {sprint}{direction}...",
+								fg=(200, 200, 200)
+							)
 					elif action.action_type == "mouse_move":
 						# Update status bar with mouse position
 						if status_console:

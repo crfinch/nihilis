@@ -6,6 +6,7 @@ import tcod.event
 from dataclasses import dataclass
 from src.utils.logger_config import logger
 from engine.message_manager import MessageManager
+from engine.game_state_manager import GameStateManager
 
 
 class GameState(Enum):
@@ -30,10 +31,13 @@ class GameAction:
 class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 	"""Handles input events and converts them into game actions."""
 	
-	def __init__(self, context: tcod.context.Context, message_manager: Optional['MessageManager'] = None, debug: bool = False):
+	def __init__(self, context: tcod.context.Context, 
+	             state_manager: GameStateManager,
+	             message_manager: Optional['MessageManager'] = None, 
+	             debug: bool = False):
 		super().__init__()
 		self.context = context
-		self.current_state = GameState.GAME_WORLD
+		self.state_manager = state_manager
 		self.message_manager = message_manager
 		self.debug = debug
 		# Track currently pressed keys to handle multiple key inputs
@@ -92,17 +96,17 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		alt = bool(mod & tcod.event.KMOD_ALT)
 
 		# State-specific handling
-		if self.current_state == GameState.MAIN_MENU:
+		if self.state_manager.get_current_state() == GameState.MAIN_MENU:
 			return self._handle_main_menu(key)
-		elif self.current_state == GameState.GAME_WORLD:
+		elif self.state_manager.get_current_state() == GameState.GAME_WORLD:
 			return self._handle_game_world(key, shift, ctrl, alt)
-		elif self.current_state == GameState.INVENTORY:
+		elif self.state_manager.get_current_state() == GameState.INVENTORY:
 			return self._handle_inventory(key)
-		elif self.current_state == GameState.CHARACTER_SCREEN:
+		elif self.state_manager.get_current_state() == GameState.CHARACTER_SCREEN:
 			return self._handle_character_screen(key)
-		elif self.current_state == GameState.DIALOGUE:
+		elif self.state_manager.get_current_state() == GameState.DIALOGUE:
 			return self._handle_dialogue(key)
-		elif self.current_state == GameState.PAUSED:
+		elif self.state_manager.get_current_state() == GameState.PAUSED:
 			return self._handle_paused(key)
 			
 		return None
@@ -142,11 +146,29 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		if key == tcod.event.KeySym.ESCAPE:
 			return GameAction("quit")
 		elif key == tcod.event.KeySym.RETURN:
+			self.state_manager.change_state(GameState.GAME_WORLD)
+			if self.message_manager:
+				self.message_manager.add_message("Welcome to the game world!", fg=(255, 255, 0))
 			return GameAction("start_game")
 		return None
 
 	def _handle_game_world(self, key: int, shift: bool, ctrl: bool, alt: bool) -> Optional[GameAction]:
 		"""Handle input specific to the game world state."""
+		if key == tcod.event.KeySym.ESCAPE:
+			self.state_manager.change_state(GameState.MAIN_MENU)
+			if self.message_manager:
+				self.message_manager.add_message("Returned to main menu", fg=(255, 255, 0))
+			return GameAction("escape")
+		elif key == tcod.event.KeySym.i:
+			self.state_manager.change_state(GameState.INVENTORY)
+			if self.message_manager:
+				self.message_manager.add_message("Opening inventory...", fg=(200, 200, 200))
+			return GameAction("open_inventory")
+		elif key == tcod.event.KeySym.c:
+			self.state_manager.change_state(GameState.CHARACTER_SCREEN)
+			if self.message_manager:
+				self.message_manager.add_message("Opening character screen...", fg=(200, 200, 200))
+			return GameAction("open_character")
 		# Check movement keys first
 		if key in self.MOVEMENT_KEYS:
 			# Modify movement based on modifiers (e.g., shift for sprint)
@@ -170,16 +192,28 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 	def _handle_inventory(self, key: int) -> Optional[GameAction]:
 		"""Handle input specific to the inventory state."""
 		if key == tcod.event.KeySym.ESCAPE:
+			self.state_manager.change_state(GameState.GAME_WORLD)
+			if self.message_manager:
+				self.message_manager.add_message("Closed inventory", fg=(200, 200, 200))
 			return GameAction("close_inventory")
 		elif key == tcod.event.KeySym.i:
+			self.state_manager.change_state(GameState.GAME_WORLD)
+			if self.message_manager:
+				self.message_manager.add_message("Closed inventory", fg=(200, 200, 200))
 			return GameAction("close_inventory")
 		return None
 
 	def _handle_character_screen(self, key: int) -> Optional[GameAction]:
 		"""Handle input specific to the character screen state."""
 		if key == tcod.event.KeySym.ESCAPE:
+			self.state_manager.change_state(GameState.GAME_WORLD)
+			if self.message_manager:
+				self.message_manager.add_message("Closed character screen", fg=(200, 200, 200))
 			return GameAction("close_character")
 		elif key == tcod.event.KeySym.c:
+			self.state_manager.change_state(GameState.GAME_WORLD)
+			if self.message_manager:
+				self.message_manager.add_message("Closed character screen", fg=(200, 200, 200))
 			return GameAction("close_character")
 		return None
 
@@ -198,10 +232,6 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		elif key == tcod.event.KeySym.p:
 			return GameAction("unpause")
 		return None
-
-	def set_game_state(self, new_state: GameState) -> None:
-		"""Change the current game state."""
-		self.current_state = new_state
 
 	def _debug_message(self, message: str) -> None:
 		"""Send debug messages to the message manager if debug mode is enabled."""

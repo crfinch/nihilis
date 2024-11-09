@@ -4,19 +4,7 @@ from enum import Enum, auto
 from typing import Optional, Dict, Any, Set
 import tcod.event
 from dataclasses import dataclass
-import logging
-
-# Configure logging
-logging.basicConfig(
-	level=logging.WARNING,  # Set the logging level to WARNING
-	format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-	handlers=[
-		logging.StreamHandler()  # Output logs to the console
-	]
-)
-
-# Create a logger for this module
-logger = logging.getLogger(__name__)
+from src.utils.logger_config import logger
 
 class GameState(Enum):
 	"""Enum representing different game states that affect input handling."""
@@ -113,10 +101,14 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		"""Handle mouse movement."""
 		try:
 			return GameAction("mouse_move", {
-				"x": event.tile.x,
-				"y": event.tile.y,
-				"pixel_x": event.pixel.x,
-				"pixel_y": event.pixel.y
+				# "x": event.tile.x,
+				"x": event.motion.x,	
+				# "y": event.tile.y,
+				"y": event.motion.y,
+				# "pixel_x": event.pixel.x,
+				# "pixel_y": event.pixel.y
+				"pixel_x": event.position.x,
+				"pixel_y": event.position.y
 			})
 		except AttributeError:
 			logger.warning("Mouse motion event received without valid coordinates")
@@ -127,8 +119,10 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		try:
 			return GameAction("mouse_click", {
 				"button": event.button,
-				"x": event.tile.x,
-				"y": event.tile.y
+				# "x": event.tile.x,
+				# "y": event.tile.y
+				"x": event.position.x,
+				"y": event.position.y
 			})
 		except AttributeError:
 			logger.warning("Mouse button event received without valid coordinates")
@@ -157,9 +151,9 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 			return self.COMMAND_KEYS[key]
 			
 		# Handle combined key presses
-		if ctrl and key == tcod.event.K_s:
+		if ctrl and key == tcod.event.KeySym.s:
 			return GameAction("save_game")
-		if ctrl and key == tcod.event.K_l:
+		if ctrl and key == tcod.event.KeySym.l:
 			return GameAction("load_game")
 			
 		return None

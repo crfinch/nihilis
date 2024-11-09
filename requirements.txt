@@ -1,5 +1,4 @@
 # Core Dependencies
-python-tcod>=11.19        # Base game engine
 numpy>=1.24.0             # Required for TCOD and numerical computations
 pandas>=2.0.0             # For data management and analysis
 

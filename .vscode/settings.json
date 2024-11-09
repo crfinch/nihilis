@@ -1,0 +1,5 @@
+{
+    "python.defaultInterpreterPath": "~/.virtualenvs/nihilis/bin/python",
+    "python.linting.enabled": true,
+    "python.formatting.provider": "black"
+}

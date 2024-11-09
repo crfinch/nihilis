@@ -7,11 +7,12 @@ Nihilis is the fusion of a world simulator, a procedural story generator, and a 
 
 ## version history
 
-|       date | version | description                                         |
-| ---------: | :-----: | --------------------------------------------------- |
-| 2024-11-08 |   0.0   | initial commits only                                |
-|            |   0.1   | working display manager                             |
-| 2024-11-09 |   0.2   | working input manager & tests                       |
-|            |   0.3   | working message manager & scrolling message console |
-|            |   0.4   | working game state management                       |
+|       date | version | description                                                  |
+| ---------: | :-----: | ------------------------------------------------------------ |
+| 2024-11-08 |   0.0   | initial commits only                                         |
+|            |   0.1   | working display manager                                      |
+| 2024-11-09 |   0.2   | working input manager & tests                                |
+|            |   0.3   | working message manager & scrolling message console          |
+|            |   0.4   | working game state management                                |
+|            |   0.5   | broke ui and game loop into their own modules; added tests for all |
 

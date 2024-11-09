@@ -3,9 +3,10 @@
 
 ## version history
 
-| date       | version | description                   |
-| ---------- | ------- | ----------------------------- |
-| 2024-11-08 | 0.0     | initial commits only          |
-| 2024-11-08 | 0.1     | working display manager       |
-| 2024-11-09 | 0.2     | working input manager & tests |
+| date       | version | description                                         |
+| ---------- | ------- | --------------------------------------------------- |
+| 2024-11-08 | 0.0     | initial commits only                                |
+| 2024-11-08 | 0.1     | working display manager                             |
+| 2024-11-09 | 0.2     | working input manager & tests                       |
+|            | 0.3     | working message manager & scrolling message console |
 

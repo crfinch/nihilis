@@ -181,17 +181,13 @@ class TerrainGenerator:
 		heightmap = (heightmap + 1) * 0.5
 		
 		# Apply exponential distribution for more realistic terrain
-		# This will create more lowlands and fewer mountains
-		power = 1.2  # Adjust this value to control the distribution
-		heightmap = np.power(heightmap, power)
+		heightmap = np.power(heightmap, self.settings.height_power)
 		
 		# Apply continental shelf effect
-		# This creates more distinct transitions between water and land
-		water_level = 0.4
-		land_scale = 0.3
-		
-		mask = heightmap > water_level
-		heightmap[mask] = water_level + (heightmap[mask] - water_level) * land_scale
+		mask = heightmap > self.settings.water_level
+		heightmap[mask] = (self.settings.water_level + 
+						  (heightmap[mask] - self.settings.water_level) * 
+						  self.settings.land_scale)
 		
 		return heightmap
 	

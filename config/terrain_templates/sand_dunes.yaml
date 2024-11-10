@@ -1,0 +1,20 @@
+name: Sand Dunes
+description: Arid desert terrain with rolling sand dunes and minimal erosion
+settings:
+  width: 256
+  height: 256
+  octaves: 3
+  persistence: 0.7
+  lacunarity: 1.4
+  scale: 80.0
+  height_power: 1.5      # More exponential falloff for smoother dunes
+  water_level: 0.05       # Very low water level for desert
+  land_scale: 0.4        # Moderate height variations
+  erosion:
+    droplets: 5000     # Minimal water erosion
+    inertia: 0.1      # Higher inertia for smoother erosion patterns
+    capacity: 2.0      # Lower capacity as sand is easily moved
+    deposition: 0.8    # High deposition rate for sand-like behavior
+    erosion: 0.1       # Low erosion rate
+    evaporation: 0.1   # High evaporation (arid environment)
+    min_slope: 0.01    # Very low minimum slope for sand-like behavior 

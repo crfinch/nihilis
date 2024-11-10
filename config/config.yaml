@@ -52,6 +52,9 @@ world_gen:
       persistence: 0.5    # Increased slightly
       lacunarity: 1.6    # Reduced further
       scale: 100.0       # Increased for broader features
+      height_power: 1.2
+      water_level: 0.4
+      land_scale: 0.3
       seed: null
       erosion:
           droplets: 25000

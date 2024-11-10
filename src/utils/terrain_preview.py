@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+# usage
+# Save both visualizations and template
+# python -m src.utils.terrain_preview --output-dir output/desert_preview --save-template "Desert Plains"
+
+# save terrain template
+# python -m src.utils.terrain_preview --save-template "Desert Plains"
+
+# use a specific template for rendering
+# python -m src.utils.terrain_preview --template "Desert Plains"
+
+# Use custom output directory
+# python -m src.utils.terrain_preview --output-dir my_terrain_output
 
 import sys
 from pathlib import Path
@@ -44,8 +56,8 @@ def preview_terrain(
         else:
             print(f"Failed to save terrain template: {save_as_template}")
     
-    # Initialize visualizer
-    visualizer = TerrainVisualizer()
+    # Initialize visualizer with terrain settings
+    visualizer = TerrainVisualizer(world_generator.terrain_generator.settings)
     
     # Create output directory if saving
     if save_dir:

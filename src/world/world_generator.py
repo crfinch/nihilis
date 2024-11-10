@@ -77,3 +77,23 @@ class WorldGenerator:
         """Load a world from disk."""
         # TODO: Implement world loading
         pass
+    
+    @classmethod
+    def from_template(cls, template_name: str) -> 'WorldGenerator':
+        """Create a WorldGenerator instance from a terrain template."""
+        # Create a minimal config manager for non-terrain settings
+        config_manager = ConfigurationManager()
+        
+        # Create the terrain generator from template
+        terrain_generator = TerrainGenerator.from_template(template_name)
+        
+        # Create instance
+        instance = cls(config_manager)
+        
+        # Override the terrain generator with our template-based one
+        instance.terrain_generator = terrain_generator
+        
+        # Update settings to match the template
+        instance.settings.terrain = terrain_generator.settings
+        
+        return instance

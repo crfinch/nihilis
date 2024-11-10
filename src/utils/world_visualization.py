@@ -3,19 +3,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Tuple, List
 from pathlib import Path
+from src.world.terrain_settings import TerrainSettings
 
 class TerrainVisualizer:
     """Utility class for visualizing terrain data."""
     
-    def __init__(self):
+    def __init__(self, terrain_settings: Optional[TerrainSettings] = None):
         # Default color maps for different terrain features
         self.TERRAIN_CMAP = 'terrain'
         self.EROSION_CMAP = 'RdYlBu'
         self.GRADIENT_CMAP = 'coolwarm'
         
-        # Height thresholds for terrain types (as percentages)
-        self.WATER_LEVEL = 0.2
-        self.MOUNTAIN_LEVEL = 0.9
+        # Use provided settings or defaults
+        self.WATER_LEVEL = (terrain_settings.water_level if terrain_settings 
+                           else 0.4)
+        self.MOUNTAIN_LEVEL = (self.WATER_LEVEL + 
+                              (1.0 - self.WATER_LEVEL) * 0.7)
         
     def display_heightmap(self, 
                          heightmap: np.ndarray,

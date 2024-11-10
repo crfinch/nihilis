@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union, List
 from dataclasses import dataclass
 from enum import Enum, auto
+from src.world.terrain_settings import TerrainSettings
 
 class ConfigScope(Enum):
     """Defines different configuration scopes."""
@@ -146,6 +147,23 @@ class ConfigurationManager:
     def get_debug_settings(self) -> Dict[str, bool]:
         """Get debug configuration settings."""
         return self.config.get('debug', self.DEFAULT_CONFIG['debug'])
+    
+    def get_terrain_settings(self) -> TerrainSettings:
+        """Get terrain generation settings from config."""
+        terrain_config = self.config.get('terrain', {})
+        return TerrainSettings(
+            width=terrain_config.get('width', 256),
+            height=terrain_config.get('height', 256),
+            octaves=terrain_config.get('octaves', 6),
+            persistence=terrain_config.get('persistence', 0.5),
+            lacunarity=terrain_config.get('lacunarity', 2.0),
+            scale=terrain_config.get('scale', 100.0),
+            height_power=terrain_config.get('height_power', 1.2),
+            water_level=terrain_config.get('water_level', 0.4),
+            land_scale=terrain_config.get('land_scale', 0.3),
+            seed=terrain_config.get('seed'),
+            erosion=self._get_erosion_settings(terrain_config)
+        )
         
     def update_config(self, scope: ConfigScope, settings: Dict[str, Any]) -> bool:
         """Update configuration settings for a specific scope."""

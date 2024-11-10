@@ -1,0 +1,20 @@
+name: High Mountains
+description: Dramatic alpine terrain with sharp peaks, deep valleys, and extensive erosion patterns
+settings:
+  width: 256
+  height: 256
+  octaves: 8
+  persistence: 0.45
+  lacunarity: 2.2
+  scale: 150.0
+  height_power: 0.95      # Less exponential falloff for more high areas
+  water_level: 0.3       # Lower water level
+  land_scale: 0.65        # More dramatic height variations
+  erosion:
+    droplets: 35000    # Heavy erosion simulation
+    inertia: 0.03      # Low inertia for sharp erosion patterns
+    capacity: 5.0      # High sediment capacity for deep valley carving
+    deposition: 0.2    # Low deposition rate for steep features
+    erosion: 0.3       # High erosion rate for dramatic valley formation
+    evaporation: 0.01  # Low evaporation for persistent erosion
+    min_slope: 0.05    # Higher minimum slope for mountainous features 

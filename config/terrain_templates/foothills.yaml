@@ -1,0 +1,20 @@
+name: Foothills
+description: Rolling terrain with varied elevation and gentle valleys, typical of mountain approaches
+settings:
+  width: 256
+  height: 256
+  octaves: 5           # Moderate octaves for varied detail
+  persistence: 0.55    # Slightly higher persistence for rolling features
+  lacunarity: 1.8      # Moderate lacunarity for varied hill sizes
+  scale: 120.0         # Larger scale for broader hills
+  height_power: 0.4      # More exponential falloff for more high areas
+  water_level: 0.1       # Lower water level
+  land_scale: 0.3        # Less dramatic height variations
+  erosion:
+    droplets: 15000    # Moderate water erosion
+    inertia: 0.04      # Lower inertia for more varied erosion patterns
+    capacity: 3.5      # Moderate sediment capacity
+    deposition: 0.3    # Balanced deposition rate
+    erosion: 0.15      # Moderate erosion rate
+    evaporation: 0.03  # Standard evaporation rate
+    min_slope: 0.02    # Slightly higher minimum slope than plains 

@@ -15,3 +15,6 @@ settings:
   persistence: 0.5
   scale: 100.0
   width: 256
+  height_power: 0.4      # More exponential falloff for more high areas
+  water_level: 0.1       # Lower water level
+  land_scale: 0.3        # Less dramatic height variations

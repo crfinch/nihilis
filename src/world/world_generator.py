@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any
 import numpy as np
 
+from src.world.biome_generator import BiomeGenerator
+from src.world.biome_generator import BiomeSettings
 from src.world.terrain_generator import TerrainGenerator
 from src.world.terrain_settings import TerrainSettings
 from src.utils.configuration_manager import ConfigurationManager
@@ -43,6 +45,7 @@ class WorldGenerator:
         
         # Initialize sub-generators
         self.terrain_generator = TerrainGenerator(self.settings.terrain)
+        self.biome_generator = BiomeGenerator(BiomeSettings())
         
         # Set RNG
         if self.settings.seed is None:

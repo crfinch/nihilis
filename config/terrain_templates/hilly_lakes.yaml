@@ -1,0 +1,17 @@
+description: Terrain template created on 2024-11-09 23:10:26
+name: Hilly Lakes
+settings:
+  erosion:
+    capacity: 4.0
+    deposition: 0.4
+    droplets: 25000
+    erosion: 0.2
+    evaporation: 0.02
+    inertia: 0.05
+    min_slope: 0.01
+  height: 256
+  lacunarity: 1.6
+  octaves: 6
+  persistence: 0.5
+  scale: 100.0
+  width: 256

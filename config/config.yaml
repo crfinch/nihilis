@@ -41,3 +41,23 @@ performance:
   memory_warning_threshold_mb: 400.0
   target_fps: 60
   warning_threshold_fps: 45.0
+world_gen:
+  width: 256
+  height: 256
+  seed: null  # Will be randomly generated if null
+  terrain:
+      width: 256
+      height: 256
+      octaves: 6
+      persistence: 0.5    # Increased slightly
+      lacunarity: 1.6    # Reduced further
+      scale: 100.0       # Increased for broader features
+      seed: null
+      erosion:
+          droplets: 25000
+          inertia: 0.05
+          capacity: 4.0
+          deposition: 0.4   # Increased
+          erosion: 0.2      # Reduced
+          evaporation: 0.02
+          min_slope: 0.01

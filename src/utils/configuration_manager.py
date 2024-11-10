@@ -39,14 +39,14 @@ class PerformanceConfig:
 
 @dataclass
 class KeyBindings:
-    move_up: List[int]
-    move_down: List[int]
-    move_left: List[int]
-    move_right: List[int]
-    inventory: List[int]
-    character: List[int]
-    quit: List[int]
-    debug_overlay: List[int]
+    move_up: List[str]
+    move_down: List[str]
+    move_left: List[str]
+    move_right: List[str]
+    inventory: List[str]
+    character: List[str]
+    quit: List[str]
+    debug_overlay: List[str]
 
 class ConfigurationManager:
     """Manages game configuration settings."""
@@ -72,14 +72,14 @@ class ConfigurationManager:
             "memory_warning_threshold_mb": 400.0
         },
         "keybindings": {
-            "move_up": [273, 107],      # UP arrow and 'k'
-            "move_down": [274, 106],    # DOWN arrow and 'j'
-            "move_left": [276, 104],    # LEFT arrow and 'h'
-            "move_right": [275, 108],   # RIGHT arrow and 'l'
-            "inventory": [105],         # 'i'
-            "character": [99],          # 'c'
-            "quit": [27],              # ESC
-            "debug_overlay": [284]      # F3
+            "move_up": ["UP", "k"],      # UP arrow and 'k'
+            "move_down": ["DOWN", "j"],    # DOWN arrow and 'j'
+            "move_left": ["LEFT", "h"],    # LEFT arrow and 'h'
+            "move_right": ["RIGHT", "l"],   # RIGHT arrow and 'l'
+            "inventory": ["i"],         # 'i'
+            "character": ["c"],          # 'c'
+            "quit": ["ESC"],              # ESC
+            "debug_overlay": ["F3"]      # F3
         },
         "debug": {
             "enabled": False,

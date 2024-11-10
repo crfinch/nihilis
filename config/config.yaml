@@ -1,0 +1,43 @@
+debug:
+  enabled: false
+  god_mode: false
+  log_input: false
+  show_fps: true
+display:
+  font_path: resources/fonts/terminal16x16_gs_ro.png
+  font_width: 16
+  font_height: 16
+  fullscreen: false
+  screen_height: 50
+  screen_width: 80
+  tile_height: 16
+  tile_width: 16
+  vsync: true
+keybindings:
+  move_up:
+    - "UP"
+    - "k"
+  move_down:
+    - "DOWN"
+    - "j"
+  move_left:
+    - "LEFT"
+    - "h"
+  move_right:
+    - "RIGHT"
+    - "l"
+  inventory:
+    - "i"
+  character:
+    - "c"
+  quit:
+    - "ESCAPE"
+  debug_overlay:
+    - "F3"
+performance:
+  critical_threshold_fps: 30.0
+  logging_interval: 5
+  max_messages: 100
+  memory_warning_threshold_mb: 400.0
+  target_fps: 60
+  warning_threshold_fps: 45.0

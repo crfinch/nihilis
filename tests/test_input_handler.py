@@ -3,6 +3,7 @@ import tcod.event
 from src.engine.input_handler import InputHandler, GameState, GameAction
 from src.engine.game_state_manager import GameStateManager
 from src.engine.message_manager import MessageManager
+from src.utils.configuration_manager import ConfigurationManager
 
 @pytest.fixture
 def game_state_manager():
@@ -15,10 +16,12 @@ def message_manager():
 @pytest.fixture
 def input_handler(game_state_manager, message_manager):
     context = tcod.context.new()
+    config_manager = ConfigurationManager()
     return InputHandler(
         context=context,
         state_manager=game_state_manager,
         message_manager=message_manager,
+        config_manager=config_manager,
         debug=False
     )
 

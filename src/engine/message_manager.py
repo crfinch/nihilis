@@ -2,9 +2,10 @@ from typing import List, Tuple
 import tcod
 
 class MessageManager:
-    def __init__(self, max_messages: int = 100):
+    def __init__(self, max_messages: int = 100, console_width: int = None):
         self.messages: List[Tuple[str, Tuple[int, int, int]]] = []
         self.max_messages = max_messages
+        self.console_width = console_width or 25  # Default if not specified
 
     def _wrap_text(self, text: str, width: int) -> List[str]:
         """Break text into lines that fit within the given width."""
@@ -40,16 +41,16 @@ class MessageManager:
 
         return lines
 
-    def add_message(self, text: str, fg: Tuple[int, int, int] = (255, 255, 255), width: int = 26):
+    def add_message(self, text: str, fg: Tuple[int, int, int] = (255, 255, 255)):
         """Add a message, wrapping it if necessary to fit the console width."""
         if not text:
             self.messages.append(("", fg))
             return
 
         # Only subtract margins if we actually need to wrap
-        available_width = width
-        if len(text) > width:
-            available_width = width - 4  # Apply margins only when wrapping is needed
+        available_width = self.console_width
+        if len(text) > self.console_width:
+            available_width = self.console_width - 4  # Apply margins only when wrapping is needed
         
         wrapped_lines = self._wrap_text(text, available_width)
         

@@ -18,25 +18,35 @@ class DisplayManager:
 	SIDEBAR_WIDTH = 25  # Reduced from 30 to account for larger tiles
 	MINIMAP_HEIGHT = 25  # Reduced from 30 to account for larger tiles
     
-	def __init__(self, message_manager: Optional['MessageManager'] = None):
+	def __init__(self, message_manager: Optional['MessageManager'] = None, config_manager = None):
 		"""Initialize the display manager and create console layers."""
-		# Load the tileset
+		self.message_manager = message_manager
+		
+		# Get display configuration
+		if config_manager:
+			self.display_config = config_manager.get_display_config()
+		else:
+			# Fallback to default configuration
+			from src.utils.configuration_manager import ConfigurationManager
+			self.display_config = ConfigurationManager().get_display_config()
+		
+		# Load the tileset using configuration
 		self.tileset = tcod.tileset.load_tilesheet(
-			"resources/fonts/terminal16x16_gs_ro.png", 16, 16, tcod.tileset.CHARMAP_CP437
+			self.display_config.font_path,
+			self.display_config.font_width,
+			self.display_config.font_height,
+			tcod.tileset.CHARMAP_CP437
 		)
 		
-		# initialize the message manager reference.
-		self.message_manager = message_manager
-			
-			# Create the main window
+		# Create the main window
 		self.context = tcod.context.new(
-			columns=self.SCREEN_WIDTH,
-			rows=self.SCREEN_HEIGHT,
+			columns=self.display_config.screen_width,
+			rows=self.display_config.screen_height,
 			title="Nihilis",
-			vsync=True,
+			vsync=self.display_config.vsync,
 			sdl_window_flags=tcod.context.SDL_WINDOW_RESIZABLE,
 			tileset=self.tileset
-			)
+		)
 
 			# Verify context initialization
 		if not self.context:

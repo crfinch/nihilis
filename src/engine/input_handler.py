@@ -1,8 +1,9 @@
 # src/engine/input_handler.py
 
 from enum import Enum, auto
-from typing import Optional, Dict, Any, Set
+from typing import Optional, Dict, Any, Set, Tuple
 import tcod.event
+import tcod.context
 from dataclasses import dataclass
 from src.utils.logger_config import logger
 from src.engine.message_manager import MessageManager
@@ -31,44 +32,77 @@ class GameAction:
 class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 	"""Handles input events and converts them into game actions."""
 	
-	def __init__(self, context: tcod.context.Context, 
+	def __init__(self, context: tcod.context.Context,  # Change this type hint
 	             state_manager: GameStateManager,
 	             message_manager: Optional['MessageManager'] = None, 
+	             config_manager = None,
 	             debug: bool = False):
 		super().__init__()
 		self.context = context
 		self.state_manager = state_manager
 		self.message_manager = message_manager
 		self.debug = debug
+
 		# Track currently pressed keys to handle multiple key inputs
 		self.pressed_keys: Set[int] = set()
         
-		# Define key mappings - can be loaded from config later
-		self.MOVEMENT_KEYS = {
-			# Arrow keys
-			tcod.event.KeySym.UP: GameAction("move", {"dx": 0, "dy": -1}),
-			tcod.event.KeySym.DOWN: GameAction("move", {"dx": 0, "dy": 1}),
-			tcod.event.KeySym.LEFT: GameAction("move", {"dx": -1, "dy": 0}),
-			tcod.event.KeySym.RIGHT: GameAction("move", {"dx": 1, "dy": 0}),
-			# Vi keys
-			tcod.event.KeySym.k: GameAction("move", {"dx": 0, "dy": -1}),
-			tcod.event.KeySym.j: GameAction("move", {"dx": 0, "dy": 1}),
-			tcod.event.KeySym.h: GameAction("move", {"dx": -1, "dy": 0}),
-			tcod.event.KeySym.l: GameAction("move", {"dx": 1, "dy": 0}),
-			# Diagonal movement
-			tcod.event.KeySym.y: GameAction("move", {"dx": -1, "dy": -1}),
-			tcod.event.KeySym.u: GameAction("move", {"dx": 1, "dy": -1}),
-			tcod.event.KeySym.b: GameAction("move", {"dx": -1, "dy": 1}),
-			tcod.event.KeySym.n: GameAction("move", {"dx": 1, "dy": 1}),
-		}
-        
-		self.COMMAND_KEYS = {
-			tcod.event.KeySym.i: GameAction("open_inventory"),
-			tcod.event.KeySym.c: GameAction("open_character"),
-			tcod.event.KeySym.ESCAPE: GameAction("escape"),
-			tcod.event.KeySym.RETURN: GameAction("confirm"),
-			tcod.event.KeySym.F11: GameAction("toggle_fullscreen"),
-        }
+		# Get keybindings from config manager if available
+		if config_manager:
+			key_config = config_manager.get_keybindings()
+			
+			# Initialize empty dictionaries
+			self.MOVEMENT_KEYS = {}
+			self.COMMAND_KEYS = {}
+			
+			# Handle movement keys
+			movement_mappings = {
+				'move_up': (0, -1),
+				'move_down': (0, 1),
+				'move_left': (-1, 0),
+				'move_right': (1, 0)
+			}
+			
+			# Process movement keys
+			for direction, (dx, dy) in movement_mappings.items():
+				keys = getattr(key_config, direction)
+				for key in keys:
+					keysym = getattr(tcod.event.KeySym, key)
+					self.MOVEMENT_KEYS[keysym] = GameAction("move", {"dx": dx, "dy": dy})
+			
+			# Process command keys
+			command_mappings = {
+				'inventory': 'open_inventory',
+				'character': 'open_character',
+				'quit': 'escape',
+				'debug_overlay': 'toggle_debug'
+			}
+			
+			for config_key, action_type in command_mappings.items():
+				if hasattr(key_config, config_key):
+					keys = getattr(key_config, config_key)
+					for key in keys:
+						keysym = getattr(tcod.event.KeySym, key)
+						self.COMMAND_KEYS[keysym] = GameAction(action_type)
+
+		else:
+			# Fallback to default keybindings
+			self.MOVEMENT_KEYS = {
+				tcod.event.KeySym.UP: GameAction("move", {"dx": 0, "dy": -1}),
+				tcod.event.KeySym.DOWN: GameAction("move", {"dx": 0, "dy": 1}),
+				tcod.event.KeySym.LEFT: GameAction("move", {"dx": -1, "dy": 0}),
+				tcod.event.KeySym.RIGHT: GameAction("move", {"dx": 1, "dy": 0}),
+
+				tcod.event.KeySym.k: GameAction("move", {"dx": 0, "dy": -1}),
+				tcod.event.KeySym.j: GameAction("move", {"dx": 0, "dy": 1}),
+				tcod.event.KeySym.h: GameAction("move", {"dx": -1, "dy": 0}),
+				tcod.event.KeySym.l: GameAction("move", {"dx": 1, "dy": 0}),
+			}
+			
+			self.COMMAND_KEYS = {
+				tcod.event.KeySym.i: GameAction("open_inventory"),
+				tcod.event.KeySym.c: GameAction("open_character"),
+				tcod.event.KeySym.ESCAPE: GameAction("escape"),
+			}
 
 	def dispatch(self, event: tcod.event.Event) -> Optional[GameAction]:
 		"""Override dispatch to include debug information."""
@@ -142,7 +176,6 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 			return None
 
 	def _handle_main_menu(self, key: int) -> Optional[GameAction]:
-		"""Handle input specific to the main menu state."""
 		if key == tcod.event.KeySym.ESCAPE:
 			return GameAction("quit")
 		elif key == tcod.event.KeySym.RETURN:
@@ -194,26 +227,25 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		if key == tcod.event.KeySym.ESCAPE:
 			self.state_manager.change_state(GameState.GAME_WORLD)
 			if self.message_manager:
-				self.message_manager.add_message("Closed inventory", fg=(200, 200, 200))
+				self.message_manager.add_message("Closed inventory screen...", fg=(200, 200, 200))
 			return GameAction("close_inventory")
 		elif key == tcod.event.KeySym.i:
 			self.state_manager.change_state(GameState.GAME_WORLD)
 			if self.message_manager:
-				self.message_manager.add_message("Closed inventory", fg=(200, 200, 200))
+				self.message_manager.add_message("Closed inventory screen...", fg=(200, 200, 200))
 			return GameAction("close_inventory")
 		return None
 
 	def _handle_character_screen(self, key: int) -> Optional[GameAction]:
-		"""Handle input specific to the character screen state."""
 		if key == tcod.event.KeySym.ESCAPE:
 			self.state_manager.change_state(GameState.GAME_WORLD)
 			if self.message_manager:
-				self.message_manager.add_message("Closed character screen", fg=(200, 200, 200))
+				self.message_manager.add_message("Closed character screen...", fg=(200, 200, 200))
 			return GameAction("close_character")
 		elif key == tcod.event.KeySym.c:
 			self.state_manager.change_state(GameState.GAME_WORLD)
 			if self.message_manager:
-				self.message_manager.add_message("Closed character screen", fg=(200, 200, 200))
+				self.message_manager.add_message("Closed character screen...", fg=(200, 200, 200))
 			return GameAction("close_character")
 		return None
 
@@ -237,3 +269,4 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		"""Send debug messages to the message manager if debug mode is enabled."""
 		if self.debug and self.message_manager:
 			self.message_manager.add_message(f"DEBUG: {message}", fg=(128, 128, 255))
+

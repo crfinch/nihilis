@@ -2,14 +2,17 @@ import pytest
 import tcod
 from src.engine.display_manager import DisplayManager
 from src.engine.message_manager import MessageManager
+from src.utils.configuration_manager import ConfigurationManager
 
 @pytest.fixture
 def message_manager():
     return MessageManager()
 
 @pytest.fixture
+@pytest.fixture
 def display_manager(message_manager):
-    return DisplayManager(message_manager)
+    config_manager = ConfigurationManager()
+    return DisplayManager(message_manager, config_manager)
 
 def test_display_manager_initialization(display_manager):
     """Test that the DisplayManager initializes correctly with all required consoles."""

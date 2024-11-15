@@ -1,1 +1,17 @@
- 
+width: 256
+height: 256
+octaves: 6
+persistence: 0.5
+lacunarity: 2.0
+scale: 100.0
+height_power: 1.2
+water_level: 0.4
+land_scale: 0.3
+erosion:
+  droplets: 25000
+  inertia: 0.05
+  capacity: 4.0
+  deposition: 0.4
+  erosion: 0.2
+  evaporation: 0.02
+  min_slope: 0.01 

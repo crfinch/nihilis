@@ -12,13 +12,3 @@ def height_to_color(height: float) -> tuple[int, int, int]:
     else:  # Mountains
         return (128, 128, 128)
 
-# src/debug/commands.py
-from src.game_states.map_viewer_state import MapViewerState
-
-def cmd_view_heightmap(engine, args):
-    """Debug command to view the current world's heightmap."""
-    if engine.world and engine.world.heightmap is not None:
-        return MapViewerState(engine, engine.world.heightmap)
-    else:
-        engine.message_log.add_message("No heightmap available to view.", fg=(255, 0, 0))
-        return None

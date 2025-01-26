@@ -18,6 +18,7 @@ class UIManager:
 		self.world_data = None
 		self.debug = debug
 		self.performance_monitor = None
+		self.player = None
         
 	def set_world_data(self, world_data):
 		"""Update the world data used for rendering maps."""
@@ -27,6 +28,10 @@ class UIManager:
 	def set_performance_monitor(self, monitor):
 		"""Set the performance monitor for debug information."""
 		self.performance_monitor = monitor
+        
+	def set_player(self, player):
+		"""Set the player character for rendering."""
+		self.player = player
         
 	def render_game_screen(self):
 		"""Render the main game screen with all UI elements."""
@@ -49,12 +54,41 @@ class UIManager:
 	def _render_main_view(self):
 		"""Render the main game view."""
 		console = self.display_manager.get_console("main")
-		if console:
-			# Note: console.print still takes (x,y) coordinates
-			console.print(2, 1, "Welcome to Nihilis!", fg=(255, 223, 0))
-			console.print(2, 3, "▲ Mountains", fg=(128, 128, 128))
-			console.print(2, 4, "≈ Rivers", fg=(0, 148, 255))
-			console.print(2, 5, "♠ Forests", fg=(0, 255, 0))
+		if not console or not self.world_data or not self.player:
+			return
+			
+		# Get the console dimensions (excluding a 1-cell border)
+		view_width = console.width - 2
+		view_height = console.height - 2
+		
+		# Get the player's current position
+		center_pos = (int(self.player.y), int(self.player.x))
+		
+		# Render the local map centered on the player
+		ascii_map = self.map_renderer.render_local_map(
+			self.world_data,
+			center_pos,
+			view_width,
+			view_height
+		)
+		
+		# Draw frame around the map
+		console.draw_frame(0, 0, console.width, console.height, title=" World View ")
+		
+		# Draw the map to the console
+		for y in range(len(ascii_map)):
+			for x in range(len(ascii_map[0])):
+				# Get the appropriate color based on the terrain
+				symbol = ascii_map[y][x]
+				
+				# Draw the character
+				if symbol == self.player.char:
+					# Draw player in white
+					console.print(x+1, y+1, symbol, fg=(255, 255, 255))
+				else:
+					# Get terrain color based on the symbol
+					color = self._get_terrain_color(symbol)
+					console.print(x+1, y+1, symbol, fg=color)
             
 	def _render_status_bar(self):
 		"""Render the status bar with optional performance metrics."""
@@ -87,12 +121,13 @@ class UIManager:
 			'discovery_mask': self.world_data.get('discovery_mask')
 		}
 		
-		# Render the world map
+		# Render the world map with player
 		ascii_map = self.map_renderer.render_world_map(
 			render_data,
 			map_width,
 			map_height,
-			render_data['discovery_mask']
+			render_data['discovery_mask'],
+			self.player
 		)
 		
 		# Add frame
@@ -128,6 +163,7 @@ class UIManager:
 			'*': (255, 215, 0),    # Capital city (gold)
 			'■': (220, 220, 220),  # Major city (light gray)
 			'□': (180, 180, 180),  # Minor city (darker gray)
+			'@': (255, 128, 255),  # Player character (lavender)
 			# Frame characters
 			'┌': (255, 255, 255),  # White
 			'┐': (255, 255, 255),
@@ -152,4 +188,3 @@ class UIManager:
 			
 			# Render messages
 			self.message_manager.render_messages(console)
-			

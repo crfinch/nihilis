@@ -17,7 +17,7 @@ class TerrainSymbols:
     TUNDRA = ','       # Tundra/snow '⚬'
     UNKNOWN = '?'       # Unexplored areas
     BEACH = ':'         # Beach/shore
-    CAPITAL = '★'      # Capital city 
+    CAPITAL = '*'      # Capital city 
     CITY = '■'         # Major city 
     TOWN = '□'         # Minor city 
     VILLAGE = '○'      # Village
@@ -62,11 +62,9 @@ class MapRenderer:
                 return self.symbols.PLAINS  # Using plains symbol for savanna
             elif biome_type == BiomeType.GRASSLAND:
                 return self.symbols.PLAINS
-            elif biome_type == BiomeType.HILLS:
-                return self.symbols.HILLS
             # Add other biome cases as needed
         
-        # Fall back to height-based terrain if no biome data
+        # Fall back to height-based terrain if no biome data or no match
         if height < 0.2:
             return self.symbols.DEEP_WATER
         elif height < 0.35:
@@ -82,16 +80,17 @@ class MapRenderer:
         return self.symbols.PEAKS
 
     def render_world_map(self, world_data: Dict, width: int, height: int, 
-                        discovery_mask: Optional[np.ndarray] = None) -> list[list[str]]:
+                        discovery_mask: Optional[np.ndarray] = None,
+                        player = None) -> list[list[str]]:
         """Render the world map at the specified dimensions."""
         heightmap = world_data['heightmap']
         biome_map = world_data.get('biome_map')
         settlements = world_data.get('settlements', [])
     
-        
-        # Calculate compression ratios
+        # Calculate compression ratios and zoom level
         y_ratio = heightmap.shape[0] / height
         x_ratio = heightmap.shape[1] / width
+        zoom_level = max(y_ratio, x_ratio)  # Higher ratio means more zoomed out
         
         # Initialize the ASCII map
         ascii_map = [['' for _ in range(width)] for _ in range(height)]
@@ -120,19 +119,54 @@ class MapRenderer:
                     height_val = np.mean(heightmap[y_start:y_end, x_start:x_end])
                     ascii_map[y][x] = self.get_terrain_symbol(height_val)
         
-        # Add settlements on top of terrain
+        # Add settlements on top of terrain, sorted by importance
         if settlements:
-            for settlement in settlements:
-                # Scale settlement position to map coordinates using same approach as terrain
+            # Sort settlements by type priority
+            type_priority = {
+                SettlementType.CAPITAL: 0,
+                SettlementType.CITY: 1,
+                SettlementType.TOWN: 2,
+                SettlementType.FORTRESS: 3,
+                SettlementType.TEMPLE: 4,
+                SettlementType.RUINS: 5,
+                SettlementType.VILLAGE: 6,
+                SettlementType.DUNGEON: 7
+            }
+            
+            sorted_settlements = sorted(settlements, key=lambda s: type_priority[s.type])
+            
+            # Filter settlements based on zoom level
+            for settlement in sorted_settlements:
+                # Skip settlements based on zoom level
+                if zoom_level > 4:  # Very zoomed out
+                    if settlement.type not in [SettlementType.CAPITAL, SettlementType.CITY]:
+                        continue
+                elif zoom_level > 2:  # Moderately zoomed out
+                    if settlement.type in [SettlementType.VILLAGE, SettlementType.DUNGEON]:
+                        continue
+                elif zoom_level > 1.5:  # Slightly zoomed out
+                    if settlement.type in [SettlementType.RUINS]:
+                        continue
+                
+                # Scale settlement position to map coordinates
                 map_y = int(settlement.position[0] / heightmap.shape[0] * height)
                 map_x = int(settlement.position[1] / heightmap.shape[1] * width)
-
                 
                 # Ensure position is within bounds
                 if 0 <= map_y < height and 0 <= map_x < width:
                     # Get the appropriate symbol based on settlement type
                     symbol = getattr(self.symbols, settlement.type.name)
                     ascii_map[map_y][map_x] = symbol
+        
+        # Add player character on top of everything else if provided
+        if player is not None:
+            # Scale player position to map coordinates
+            map_y = int(player.y / heightmap.shape[0] * height)
+            map_x = int(player.x / heightmap.shape[1] * width)
+            
+            # Ensure position is within bounds
+            if 0 <= map_y < height and 0 <= map_x < width:
+                ascii_map[map_y][map_x] = player.char
         
         return ascii_map
 
@@ -142,6 +176,7 @@ class MapRenderer:
         """Render a local area map centered on the given position."""
         heightmap = world_data['heightmap']
         biome_map = world_data.get('biome_map')
+        settlements = world_data.get('settlements', [])
         
         # Calculate view boundaries
         y_center, x_center = center_pos
@@ -163,7 +198,28 @@ class MapRenderer:
                 height_val = heightmap[y, x]
                 biome = biome_map[y, x] if biome_map is not None else None
                 
-                ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val, biome)
+                if biome is not None:
+                    ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val, BiomeType(biome))
+                else:
+                    ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val)
+        
+        # Add settlements that are within view
+        for settlement in settlements:
+            # Convert settlement position to map coordinates
+            map_y = settlement.position[0] - y_start
+            map_x = settlement.position[1] - x_start
+            
+            # Only draw if within view bounds
+            if 0 <= map_y < view_height and 0 <= map_x < view_width:
+                # Get the appropriate symbol based on settlement type
+                symbol = getattr(self.symbols, settlement.type.name)
+                ascii_map[map_y][map_x] = symbol
+        
+        # Place player at center (on top of everything else)
+        center_y = view_height // 2
+        center_x = view_width // 2
+        if 0 <= center_y < len(ascii_map) and 0 <= center_x < len(ascii_map[0]):
+            ascii_map[center_y][center_x] = '@'
         
         return ascii_map
 

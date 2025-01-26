@@ -120,9 +120,9 @@ class WorldGenerator:
         )
         
         # Debug print
-        print(f"WorldGenerator: Created {len(world.settlements)} settlements")
-        for settlement in world.settlements:
-            print(f"  {settlement.type.name} at position {settlement.position}")
+        # print(f"WorldGenerator: Created {len(world.settlements)} settlements")
+        # for settlement in world.settlements:
+            # print(f"  {settlement.type.name} at position {settlement.position}")
         
         return world
     

@@ -10,6 +10,7 @@ from src.utils.performance_monitor import PerformanceMonitor
 import time
 from src.world.world_generator import WorldGenerator
 from src.utils.configuration_manager import ConfigurationManager
+from src.entities.player import Player
 
 class GameLoop:
     def __init__(
@@ -34,8 +35,10 @@ class GameLoop:
         config_manager = ConfigurationManager()
         self.world_generator = WorldGenerator(config_manager)
         
-        # Generate initial world
+        # Generate initial world and create player
         self._initialize_world()
+        self._initialize_player()
+        
         # Add debug print to confirm initialization
         # print("Game loop initialized with performance monitoring")
 
@@ -48,6 +51,19 @@ class GameLoop:
         
         # Update UI manager with world data
         self.ui_manager.set_world_data(world_data)
+        
+        # Store world dimensions for player positioning
+        self.world_height = world_data['heightmap'].shape[0]
+        self.world_width = world_data['heightmap'].shape[1]
+
+    def _initialize_player(self):
+        """Create and position the player character."""
+        # Start player at center of the world
+        start_y = self.world_height // 2
+        start_x = self.world_width // 2
+        
+        self.player = Player(x=start_x, y=start_y)
+        self.ui_manager.set_player(self.player)
 
     def handle_action(self, action) -> bool:
         """Handle a game action. Returns False if the game should exit."""
@@ -80,12 +96,21 @@ class GameLoop:
     def _handle_movement(self, action):
         if self.state_manager.get_current_state() == GameState.GAME_WORLD:
             dx, dy = action.params["dx"], action.params["dy"]
-            direction = self._get_movement_direction(dx, dy)
-            sprint = "sprinting " if action.params.get("sprint") else ""
-            self.message_manager.add_message(
-                f"Moving {sprint}{direction}...",
-                fg=(200, 200, 200)
-            )
+            
+            # Update player position
+            new_x = self.player.x + dx
+            new_y = self.player.y + dy
+            
+            # Check world boundaries
+            if 0 <= new_x < self.world_width and 0 <= new_y < self.world_height:
+                self.player.move(dx, dy)
+                
+                direction = self._get_movement_direction(dx, dy)
+                sprint = "sprinting " if action.params.get("sprint") else ""
+                self.message_manager.add_message(
+                    f"Moving {sprint}{direction}...",
+                    fg=(200, 200, 200)
+                )
             
     def _get_movement_direction(self, dx: int, dy: int) -> str:
         direction = ""

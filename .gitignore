@@ -118,3 +118,6 @@ debug/
 *.temp
 *.swp
 *.swo
+
+# windsurf rules
+.windsurfrules

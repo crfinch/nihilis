@@ -8,6 +8,8 @@ from src.engine.ui_manager import UIManager
 from src.utils.logger_config import logger
 from src.utils.performance_monitor import PerformanceMonitor
 import time
+from src.world.world_generator import WorldGenerator
+from src.utils.configuration_manager import ConfigurationManager
 
 class GameLoop:
     def __init__(
@@ -27,8 +29,25 @@ class GameLoop:
         self.performance_monitor = performance_monitor
         self.target_fps = 60
         self.frame_time = 1.0 / self.target_fps
+        
+        # Initialize world generation
+        config_manager = ConfigurationManager()
+        self.world_generator = WorldGenerator(config_manager)
+        
+        # Generate initial world
+        self._initialize_world()
         # Add debug print to confirm initialization
         # print("Game loop initialized with performance monitoring")
+
+    def _initialize_world(self):
+        """Generate the world and prepare it for rendering."""
+        world = self.world_generator.generate()
+        
+        # Get world data for rendering using the proper method
+        world_data = world.get_render_data()
+        
+        # Update UI manager with world data
+        self.ui_manager.set_world_data(world_data)
 
     def handle_action(self, action) -> bool:
         """Handle a game action. Returns False if the game should exit."""
@@ -37,6 +56,19 @@ class GameLoop:
             
         if action.action_type == "quit":
             return False
+            
+        if action.action_type == "start_game":
+            self.message_manager.add_message("Welcome to Nihilis!", fg=(255, 223, 0))
+            return True
+            
+        if action.action_type == "open_inventory":
+            self.state_manager.change_state(GameState.INVENTORY)
+            self.message_manager.add_message("Opening inventory...", fg=(200, 200, 200))
+            return True
+            
+        if action.action_type == "open_character":
+            self.message_manager.add_message("Opening character screen...", fg=(200, 200, 200))
+            return True
             
         if action.action_type == "move":
             self._handle_movement(action)

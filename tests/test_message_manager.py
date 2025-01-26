@@ -109,3 +109,27 @@ def test_special_characters():
     print(f"Lengths: expected={len(special_chars)}, got={len(result)}")
     
     assert result == special_chars
+
+def test_message_frame_boundaries(message_manager):
+    """Test that messages respect console frame boundaries."""
+    # Create a small console for testing
+    console = tcod.console.Console(width=30, height=10)
+    
+    # Add more messages than can fit in the console
+    for i in range(15):
+        message_manager.add_message(f"Test message {i}")
+    
+    # Draw frame
+    console.draw_frame(0, 0, console.width, console.height)
+    
+    # Render messages
+    message_manager.render_messages(console)
+    
+    # Check top and bottom borders are intact
+    assert chr(console.ch[0, 1]) == "─"  # Top border
+    assert chr(console.ch[console.height-1, 1]) == "─"  # Bottom border
+    
+    # Verify no messages are written on borders
+    for x in range(console.width):
+        assert console.ch[0, x] != ord(" ")  # Top border intact
+        assert console.ch[console.height-1, x] != ord(" ")  # Bottom border intact

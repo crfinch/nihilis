@@ -17,40 +17,44 @@ class MessageManager:
         if len(text) <= width:
             return [text]
             
-        # Only proceed with wrapping if text is actually longer than width
-        words = text.split()
-        lines = []
-        current_line = []
-        current_length = 0
+        # Split on newlines first to handle explicit line breaks
+        paragraphs = text.split('\n')
+        wrapped_lines = []
+        
+        for paragraph in paragraphs:
+            # Only proceed with wrapping if text is actually longer than width
+            words = paragraph.split()
+            current_line = []
+            current_length = 0
 
-        for word in words:
-            word_length = len(word)
-            space_length = 1 if current_line else 0
-            
-            if current_length + word_length + space_length <= width:
-                current_line.append(word)
-                current_length += word_length + space_length
-            else:
-                if current_line:
-                    lines.append(" ".join(current_line))
-                current_line = [word]
-                current_length = word_length
+            for word in words:
+                word_length = len(word)
+                space_length = 1 if current_line else 0
+                
+                if current_length + word_length + space_length <= width:
+                    current_line.append(word)
+                    current_length += word_length + space_length
+                else:
+                    if current_line:
+                        wrapped_lines.append(" ".join(current_line))
+                    current_line = [word]
+                    current_length = word_length
 
-        if current_line:
-            lines.append(" ".join(current_line))
+            if current_line:
+                wrapped_lines.append(" ".join(current_line))
 
-        return lines
+        return wrapped_lines
 
-    def add_message(self, text: str, fg: Tuple[int, int, int] = (255, 255, 255)):
+    def add_message(self, text: str, fg: Tuple[int, int, int] = (255, 255, 255), width: int = None):
         """Add a message, wrapping it if necessary to fit the console width."""
         if not text:
             self.messages.append(("", fg))
             return
 
-        # Only subtract margins if we actually need to wrap
-        available_width = self.console_width
-        if len(text) > self.console_width:
-            available_width = self.console_width - 4  # Apply margins only when wrapping is needed
+        # Use provided width if given, otherwise use console_width
+        available_width = width if width is not None else self.console_width
+        if len(text) > available_width:
+            available_width = available_width - 4  # Apply margins only when wrapping is needed
         
         wrapped_lines = self._wrap_text(text, available_width)
         
@@ -59,14 +63,14 @@ class MessageManager:
             while len(self.messages) > self.max_messages:
                 self.messages.pop(0)
 
-    def render_messages(self, console: tcod.console.Console, start_y: int = 2):
-        """Render messages to the console, maintaining proper spacing."""
-        # Calculate available height for messages
-        available_height = console.height - 3  # Subtract 3 for top/bottom frame
+    def render_messages(self, console: 'Console') -> None:
+        """Render messages to the provided console."""
+        # Start from the bottom, accounting for bottom frame border
+        y = console.height - 2  # Changed from -1 to -2 to respect bottom border
         
-        # Get the messages that will fit in the available height
-        visible_messages = self.messages[-available_height:]
-        
-        for i, (text, fg) in enumerate(visible_messages):
-            if start_y + i < console.height - 1:  # Prevent overflow
-                console.print(2, start_y + i, text, fg=fg)
+        # Render messages until we hit the top frame border or run out of messages
+        for message, color in reversed(self.messages):
+            if y <= 1:  # Stop at top frame border
+                break
+            console.print(x=2, y=y, string=message, fg=color)
+            y -= 1

@@ -26,6 +26,14 @@ keybindings:
   move_right:
     - "RIGHT"
     - "l"
+  move_up_left:
+    - "y"
+  move_up_right:
+    - "u"
+  move_down_left:
+    - "b"
+  move_down_right:
+    - "n"
   inventory:
     - "i"
   character:
@@ -52,15 +60,25 @@ world_gen:
       persistence: 0.5    # Increased slightly
       lacunarity: 1.6    # Reduced further
       scale: 100.0       # Increased for broader features
-      height_power: 1.2
-      water_level: 0.4
+      height_power: 1.5
+      water_level: 0.3
       land_scale: 0.3
       seed: null
       erosion:
           droplets: 25000
           inertia: 0.05
           capacity: 4.0
-          deposition: 0.4   # Increased
-          erosion: 0.2      # Reduced
+          deposition: 0.3   # Increased
+          erosion: 0.3      # Reduced
           evaporation: 0.02
           min_slope: 0.01
+  biomes:
+    temperature_weight: 1.0
+    precipitation_weight: 1.0
+    altitude_weight: 1.0
+    ocean_level: 0.35
+    mountain_level: 0.55
+    cold_thresh: 0.2
+    temperate_thresh: 0.7
+    dry_thresh: 0.3
+    wet_thresh: 0.7

@@ -59,7 +59,11 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 				'move_up': (0, -1),
 				'move_down': (0, 1),
 				'move_left': (-1, 0),
-				'move_right': (1, 0)
+				'move_right': (1, 0),
+				'move_up_left': (-1, -1),
+				'move_up_right': (1, -1),
+				'move_down_left': (-1, 1),
+				'move_down_right': (1, 1)
 			}
 			
 			# Process movement keys
@@ -87,15 +91,23 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 		else:
 			# Fallback to default keybindings
 			self.MOVEMENT_KEYS = {
+				# Cardinal directions
 				tcod.event.KeySym.UP: GameAction("move", {"dx": 0, "dy": -1}),
 				tcod.event.KeySym.DOWN: GameAction("move", {"dx": 0, "dy": 1}),
 				tcod.event.KeySym.LEFT: GameAction("move", {"dx": -1, "dy": 0}),
 				tcod.event.KeySym.RIGHT: GameAction("move", {"dx": 1, "dy": 0}),
 
+				# Vi keys - cardinal
 				tcod.event.KeySym.k: GameAction("move", {"dx": 0, "dy": -1}),
 				tcod.event.KeySym.j: GameAction("move", {"dx": 0, "dy": 1}),
 				tcod.event.KeySym.h: GameAction("move", {"dx": -1, "dy": 0}),
 				tcod.event.KeySym.l: GameAction("move", {"dx": 1, "dy": 0}),
+				
+				# Vi keys - diagonal
+				tcod.event.KeySym.y: GameAction("move", {"dx": -1, "dy": -1}),
+				tcod.event.KeySym.u: GameAction("move", {"dx": 1, "dy": -1}),
+				tcod.event.KeySym.b: GameAction("move", {"dx": -1, "dy": 1}),
+				tcod.event.KeySym.n: GameAction("move", {"dx": 1, "dy": 1}),
 			}
 			
 			self.COMMAND_KEYS = {
@@ -118,10 +130,18 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 	def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[GameAction]:
 		"""Handle key press events based on current game state."""
 		if self.debug:
-			self._debug_message(f"Key pressed: {event.sym}")
+			self._debug_message(f"Key pressed: {event.sym} (type: {type(event.sym)})")
 		
 		key = event.sym
 		self.pressed_keys.add(key)
+
+		# Debug: Check if key is in movement keys
+		if self.debug:
+			self._debug_message(f"Movement keys: {self.MOVEMENT_KEYS}")
+			if key in self.MOVEMENT_KEYS:
+				self._debug_message(f"Movement key detected: {key} -> {self.MOVEMENT_KEYS[key]}")
+			else:
+				self._debug_message(f"Key {key} not found in movement keys")
 
 		# Handle modifier keys
 		mod = event.mod
@@ -204,7 +224,8 @@ class InputHandler(tcod.event.EventDispatch[Optional[GameAction]]):
 			return GameAction("open_character")
 		# Check movement keys first
 		if key in self.MOVEMENT_KEYS:
-			# Modify movement based on modifiers (e.g., shift for sprint)
+			if self.debug:
+				self._debug_message(f"Movement key detected: {key}")
 			action = self.MOVEMENT_KEYS[key]
 			if shift:
 				action.params["sprint"] = True

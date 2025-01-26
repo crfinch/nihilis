@@ -1,0 +1,213 @@
+from enum import Enum
+from typing import Dict, Optional, Tuple
+import numpy as np
+from src.world.biome_generator import BiomeType
+from src.world.settlement_generator import SettlementType
+
+class TerrainSymbols:
+    """ASCII symbols for different terrain features."""
+    DEEP_WATER = '≈'    # Deep ocean
+    SHALLOW_WATER = '~' # Shallow water
+    PLAINS = '.'        # Plains/grassland
+    HILLS = '∩'         # Hills
+    MOUNTAINS = '^'     # Mountains
+    PEAKS = '▲'         # Mountain peaks '△'
+    FOREST = '♠'        # Forest
+    DESERT = '∙'        # Desert
+    TUNDRA = ','       # Tundra/snow '⚬'
+    UNKNOWN = '?'       # Unexplored areas
+    BEACH = ':'         # Beach/shore
+    CAPITAL = '★'      # Capital city 
+    CITY = '■'         # Major city 
+    TOWN = '□'         # Minor city 
+    VILLAGE = '○'      # Village
+    RUINS = '∅'        # Ruins
+    DUNGEON = '◊'      # Dungeon
+    TEMPLE = '†'       # Temple
+    FORTRESS = '▣'     # Fortress
+
+    # Frame characters
+    FRAME_TOP_LEFT = '┌'
+    FRAME_TOP_RIGHT = '┐'
+    FRAME_BOTTOM_LEFT = '└'
+    FRAME_BOTTOM_RIGHT = '┘'
+    FRAME_HORIZONTAL = '─'
+    FRAME_VERTICAL = '│'
+
+class MapRenderer:
+    def __init__(self):
+        self.symbols = TerrainSymbols()
+        
+    def get_terrain_symbol(self, height: float, biome_type: Optional[BiomeType] = None) -> str:
+        """Convert height and biome data into an ASCII symbol."""
+        # If we have biome data, use that first
+        if biome_type is not None:
+            if biome_type == BiomeType.OCEAN:
+                return self.symbols.DEEP_WATER
+            elif biome_type == BiomeType.SHALLOW_OCEAN:
+                return self.symbols.SHALLOW_WATER
+            elif biome_type == BiomeType.BEACH:
+                return self.symbols.BEACH
+            elif biome_type == BiomeType.DESERT:
+                return self.symbols.DESERT
+            elif biome_type in [BiomeType.TUNDRA, BiomeType.COLD_DESERT]:
+                return self.symbols.TUNDRA
+            elif biome_type in [BiomeType.TEMPERATE_FOREST, BiomeType.TROPICAL_RAINFOREST, BiomeType.TEMPERATE_RAINFOREST]:
+                return self.symbols.FOREST
+            elif biome_type == BiomeType.MOUNTAIN:
+                return self.symbols.MOUNTAINS
+            elif biome_type == BiomeType.SNOW_PEAKS:
+                return self.symbols.PEAKS
+            elif biome_type == BiomeType.SAVANNA:
+                return self.symbols.PLAINS  # Using plains symbol for savanna
+            elif biome_type == BiomeType.GRASSLAND:
+                return self.symbols.PLAINS
+            elif biome_type == BiomeType.HILLS:
+                return self.symbols.HILLS
+            # Add other biome cases as needed
+        
+        # Fall back to height-based terrain if no biome data
+        if height < 0.2:
+            return self.symbols.DEEP_WATER
+        elif height < 0.35:
+            return self.symbols.SHALLOW_WATER
+        elif height < 0.4:
+            return self.symbols.BEACH
+        elif height < 0.6:
+            return self.symbols.PLAINS
+        elif height < 0.75:
+            return self.symbols.HILLS
+        elif height < 0.85:
+            return self.symbols.MOUNTAINS
+        return self.symbols.PEAKS
+
+    def render_world_map(self, world_data: Dict, width: int, height: int, 
+                        discovery_mask: Optional[np.ndarray] = None) -> list[list[str]]:
+        """Render the world map at the specified dimensions."""
+        heightmap = world_data['heightmap']
+        biome_map = world_data.get('biome_map')
+        settlements = world_data.get('settlements', [])
+    
+        
+        # Calculate compression ratios
+        y_ratio = heightmap.shape[0] / height
+        x_ratio = heightmap.shape[1] / width
+        
+        # Initialize the ASCII map
+        ascii_map = [['' for _ in range(width)] for _ in range(height)]
+        
+        for y in range(height):
+            for x in range(width):
+                # Skip if not discovered and discovery_mask is provided
+                if discovery_mask is not None and not discovery_mask[y, x]:
+                    ascii_map[y][x] = self.symbols.UNKNOWN
+                    continue
+                
+                # Calculate the region of original map this pixel represents
+                y_start = int(y * y_ratio)
+                y_end = int((y + 1) * y_ratio)
+                x_start = int(x * x_ratio)
+                x_end = int((x + 1) * x_ratio)
+                
+                # Take the most common biome in this region
+                if biome_map is not None:
+                    region_biomes = biome_map[y_start:y_end, x_start:x_end]
+                    unique_biomes, counts = np.unique(region_biomes, return_counts=True)
+                    dominant_biome = unique_biomes[np.argmax(counts)]
+                    height_val = np.mean(heightmap[y_start:y_end, x_start:x_end])
+                    ascii_map[y][x] = self.get_terrain_symbol(height_val, BiomeType(dominant_biome))
+                else:
+                    height_val = np.mean(heightmap[y_start:y_end, x_start:x_end])
+                    ascii_map[y][x] = self.get_terrain_symbol(height_val)
+        
+        # Add settlements on top of terrain
+        if settlements:
+            for settlement in settlements:
+                # Scale settlement position to map coordinates using same approach as terrain
+                map_y = int(settlement.position[0] / heightmap.shape[0] * height)
+                map_x = int(settlement.position[1] / heightmap.shape[1] * width)
+
+                
+                # Ensure position is within bounds
+                if 0 <= map_y < height and 0 <= map_x < width:
+                    # Get the appropriate symbol based on settlement type
+                    symbol = getattr(self.symbols, settlement.type.name)
+                    ascii_map[map_y][map_x] = symbol
+        
+        return ascii_map
+
+    def render_local_map(self, world_data: Dict, 
+                        center_pos: Tuple[int, int], 
+                        view_width: int, view_height: int) -> list[list[str]]:
+        """Render a local area map centered on the given position."""
+        heightmap = world_data['heightmap']
+        biome_map = world_data.get('biome_map')
+        
+        # Calculate view boundaries
+        y_center, x_center = center_pos
+        y_start = max(0, y_center - view_height // 2)
+        y_end = min(heightmap.shape[0], y_center + view_height // 2)
+        x_start = max(0, x_center - view_width // 2)
+        x_end = min(heightmap.shape[1], x_center + view_width // 2)
+        
+        # Initialize the ASCII map
+        ascii_map = [[self.symbols.UNKNOWN for _ in range(view_width)] 
+                    for _ in range(view_height)]
+        
+        # Fill in the visible area
+        for y in range(y_start, y_end):
+            for x in range(x_start, x_end):
+                map_y = y - y_start
+                map_x = x - x_start
+                
+                height_val = heightmap[y, x]
+                biome = biome_map[y, x] if biome_map is not None else None
+                
+                ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val, biome)
+        
+        return ascii_map
+
+    def add_frame(self, ascii_map: list[list[str]]) -> list[list[str]]:
+        """Add a frame around the ASCII map."""
+        height = len(ascii_map)
+        width = len(ascii_map[0])
+        
+        # Create new map with frame
+        framed_map = [[' ' for _ in range(width + 2)] for _ in range(height + 2)]
+        
+        # Add corners
+        framed_map[0][0] = self.symbols.FRAME_TOP_LEFT
+        framed_map[0][width + 1] = self.symbols.FRAME_TOP_RIGHT
+        framed_map[height + 1][0] = self.symbols.FRAME_BOTTOM_LEFT
+        framed_map[height + 1][width + 1] = self.symbols.FRAME_BOTTOM_RIGHT
+        
+        # Add horizontal borders
+        for x in range(1, width + 1):
+            framed_map[0][x] = self.symbols.FRAME_HORIZONTAL
+            framed_map[height + 1][x] = self.symbols.FRAME_HORIZONTAL
+        
+        # Add vertical borders
+        for y in range(1, height + 1):
+            framed_map[y][0] = self.symbols.FRAME_VERTICAL
+            framed_map[y][width + 1] = self.symbols.FRAME_VERTICAL
+        
+        # Copy the map contents
+        for y in range(height):
+            for x in range(width):
+                framed_map[y + 1][x + 1] = ascii_map[y][x]
+        
+        return framed_map 
+
+    def _get_settlement_color(self, settlement_type: SettlementType) -> Tuple[int, int, int]:
+        """Return the color for a settlement type."""
+        SETTLEMENT_COLORS = {
+            SettlementType.CAPITAL: (255, 215, 0),     # Gold
+            SettlementType.CITY: (255, 255, 255),      # White
+            SettlementType.TOWN: (192, 192, 192),      # Silver
+            SettlementType.VILLAGE: (139, 139, 139),   # Gray
+            SettlementType.RUINS: (139, 69, 19),       # Brown
+            SettlementType.DUNGEON: (148, 0, 211),     # Purple
+            SettlementType.TEMPLE: (218, 165, 32),     # Golden Rod
+            SettlementType.FORTRESS: (178, 34, 34)     # Firebrick Red
+        }
+        return SETTLEMENT_COLORS.get(settlement_type, (255, 255, 255)) 

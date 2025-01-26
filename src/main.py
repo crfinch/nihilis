@@ -40,11 +40,13 @@ def main() -> None:
 	
 	# Initialize UI manager with debug settings
 	ui_manager = UIManager(
-		display_manager, 
-		message_manager,
-		performance_monitor,
+		display_manager=display_manager, 
+		message_manager=message_manager,
 		debug=debug_settings['enabled']
 	)
+	
+	# Set the performance monitor after initialization
+	ui_manager.set_performance_monitor(performance_monitor)
 	
 	state_manager = GameStateManager(message_manager)
 	state_manager.change_state(GameState.MAIN_MENU)

@@ -56,7 +56,7 @@ class DisplayManager:
 		self.consoles: Dict[str, tcod.console.Console] = {
 			"main": tcod.console.Console(self.SCREEN_WIDTH - self.SIDEBAR_WIDTH, self.SCREEN_HEIGHT - self.STATUS_HEIGHT),
 			"status": tcod.console.Console(self.SCREEN_WIDTH, self.STATUS_HEIGHT),
-			"message_log": tcod.console.Console(self.SIDEBAR_WIDTH, self.SCREEN_HEIGHT - self.MINIMAP_HEIGHT),
+			"message_log": tcod.console.Console(self.SIDEBAR_WIDTH, self.SCREEN_HEIGHT - self.MINIMAP_HEIGHT - self.STATUS_HEIGHT),
 			"minimap": tcod.console.Console(self.SIDEBAR_WIDTH, self.MINIMAP_HEIGHT)
 		}
 			
@@ -90,7 +90,9 @@ class DisplayManager:
 		self.consoles["message_log"].blit(
 			dest=self.root_console,
 			dest_x=self.SCREEN_WIDTH - self.SIDEBAR_WIDTH,
-			dest_y=self.MINIMAP_HEIGHT
+			dest_y=self.MINIMAP_HEIGHT,
+			width=self.SIDEBAR_WIDTH,
+			height=self.SCREEN_HEIGHT - self.MINIMAP_HEIGHT - self.STATUS_HEIGHT
 		)
     
 		# Minimap in top-right

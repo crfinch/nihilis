@@ -1,6 +1,6 @@
 from enum import Enum, auto
 from typing import Optional, Callable, Dict
-from engine.message_manager import MessageManager
+from src.engine.message_manager import MessageManager
 
 class GameState(Enum):
     """Enum representing different game states."""

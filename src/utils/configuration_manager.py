@@ -6,6 +6,8 @@ from typing import Any, Dict, Optional, Union, List
 from dataclasses import dataclass
 from enum import Enum, auto
 from src.world.terrain_settings import TerrainSettings
+from typing import Optional
+from src.world.terrain_settings import ErosionSettings
 
 class ConfigScope(Enum):
     """Defines different configuration scopes."""
@@ -44,6 +46,10 @@ class KeyBindings:
     move_down: List[str]
     move_left: List[str]
     move_right: List[str]
+    move_up_left: List[str]
+    move_up_right: List[str]
+    move_down_left: List[str]
+    move_down_right: List[str]
     inventory: List[str]
     character: List[str]
     quit: List[str]
@@ -163,6 +169,22 @@ class ConfigurationManager:
             land_scale=terrain_config.get('land_scale', 0.3),
             seed=terrain_config.get('seed'),
             erosion=self._get_erosion_settings(terrain_config)
+        )
+    
+    def _get_erosion_settings(self, terrain_config: dict) -> Optional[ErosionSettings]:
+        """Get erosion settings from terrain configuration."""
+        erosion_config = terrain_config.get('erosion')
+        if not erosion_config:
+            return None
+            
+        return ErosionSettings(
+            droplets=erosion_config.get('droplets', 25000),
+            inertia=erosion_config.get('inertia', 0.05),
+            capacity=erosion_config.get('capacity', 4.0),
+            deposition=erosion_config.get('deposition', 0.4),
+            erosion=erosion_config.get('erosion', 0.2),
+            evaporation=erosion_config.get('evaporation', 0.02),
+            min_slope=erosion_config.get('min_slope', 0.01)
         )
         
     def update_config(self, scope: ConfigScope, settings: Dict[str, Any]) -> bool:

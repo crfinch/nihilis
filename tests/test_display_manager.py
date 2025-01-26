@@ -9,7 +9,6 @@ def message_manager():
     return MessageManager()
 
 @pytest.fixture
-@pytest.fixture
 def display_manager(message_manager):
     config_manager = ConfigurationManager()
     return DisplayManager(message_manager, config_manager)
@@ -96,3 +95,11 @@ def test_console_content(display_manager):
     
     # Check that the content was written correctly
     assert console.fg[0,0].tolist() == list(test_color)
+
+def test_console_dimensions(display_manager):
+    """Test that console dimensions are correctly calculated."""
+    message_log = display_manager.get_console("message_log")
+    assert message_log.height == (DisplayManager.SCREEN_HEIGHT - 
+                                DisplayManager.MINIMAP_HEIGHT - 
+                                DisplayManager.STATUS_HEIGHT)
+    assert message_log.width == DisplayManager.SIDEBAR_WIDTH

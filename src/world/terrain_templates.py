@@ -2,7 +2,6 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 import yaml
 from typing import Dict, Optional
-from src.world.terrain_generator import TerrainSettings, ErosionSettings
 from src.world.terrain_settings import TerrainSettings, ErosionSettings
 
 @dataclass

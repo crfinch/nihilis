@@ -5,67 +5,12 @@ from src.utils.configuration_manager import ConfigurationManager
 from src.world.terrain_settings import TerrainSettings, ErosionSettings
 from src.world.terrain_templates import TerrainTemplate, TerrainTemplateManager
 
-
-@dataclass
-class ErosionSettings:
-	droplets: int          # Number of droplets to simulate
-	inertia: float          # Water's tendency to maintain velocity
-	capacity: float          # How much sediment a droplet can carry
-	deposition: float        # Rate of sediment deposition
-	erosion: float           # Rate of erosion
-	evaporation: float      # Rate of water evaporation
-	min_slope: float        # Minimum slope for erosion
-
-	@classmethod
-	def from_config(cls, config: dict) -> 'ErosionSettings':
-		return cls(
-			droplets=config['droplets'],
-			inertia=config['inertia'],
-			capacity=config['capacity'],
-			deposition=config['deposition'],
-			erosion=config['erosion'],
-			evaporation=config['evaporation'],
-			min_slope=config['min_slope']
-		)
-
-@dataclass
-class TerrainSettings:
-	"""Settings for terrain generation."""
-	width: int
-	height: int
-	octaves: int
-	persistence: float
-	lacunarity: float
-	scale: float
-	seed: Optional[int] = None
-	erosion: Optional[ErosionSettings] = None
-	
-	@classmethod
-	def from_config(cls, config: dict) -> 'TerrainSettings':
-		"""Create TerrainSettings from a configuration dictionary."""
-		erosion_config = config.get('erosion')
-		erosion_settings = None
-		if erosion_config:
-			erosion_settings = ErosionSettings.from_config(erosion_config)
-			
-		return cls(
-			width=config.get('width', 256),
-			height=config.get('height', 256),
-			octaves=config.get('octaves', 6),
-			persistence=config.get('persistence', 0.5),  # Added
-			lacunarity=config.get('lacunarity', 2.0),   # Added
-			scale=config.get('scale', 100.0),
-			seed=config.get('seed'),
-			erosion=erosion_settings
-		)
-
 class TerrainGenerator:
 	@classmethod
 	def from_config(cls, config_manager: ConfigurationManager) -> 'TerrainGenerator':
 		"""Create a TerrainGenerator instance from configuration."""
-		terrain_config = config_manager.get('world_gen.terrain')
-		settings = TerrainSettings.from_config(terrain_config)
-		return cls(settings)
+		terrain_settings = config_manager.get_terrain_settings()
+		return cls(terrain_settings)
 	
 	@classmethod
 	def from_template(cls, template_name: str) -> 'TerrainGenerator':
@@ -91,6 +36,9 @@ class TerrainGenerator:
 		
 	def generate_heightmap(self) -> np.ndarray:
 		"""Generate a heightmap using Perlin noise with multiple octaves."""
+		# Reset RNG state to ensure reproducibility
+		self.rng = np.random.RandomState(self.settings.seed)
+		
 		heightmap = np.zeros((self.height, self.width))
 		
 		# Generate base noise
@@ -180,14 +128,18 @@ class TerrainGenerator:
 		# First normalize to [0, 1]
 		heightmap = (heightmap + 1) * 0.5
 		
-		# Apply exponential distribution for more realistic terrain
-		heightmap = np.power(heightmap, self.settings.height_power)
+		# Apply gentler exponential distribution
+		heightmap = np.power(heightmap, 1.1)  # Slightly more aggressive to reduce mountains
 		
-		# Apply continental shelf effect
-		mask = heightmap > self.settings.water_level
-		heightmap[mask] = (self.settings.water_level + 
-						  (heightmap[mask] - self.settings.water_level) * 
-						  self.settings.land_scale)
+		# Create more distinct elevation bands with better distribution
+		mask_lowlands = heightmap < 0.35
+		mask_hills = (heightmap >= 0.35) & (heightmap < 0.65)
+		mask_mountains = heightmap >= 0.65
+		
+		# Adjust each band separately with more conservative multipliers
+		heightmap[mask_lowlands] *= 0.9  # Slight compression of lowlands
+		heightmap[mask_hills] = 0.35 + (heightmap[mask_hills] - 0.35) * 1.1  # Gentle hill expansion
+		heightmap[mask_mountains] = 0.65 + (heightmap[mask_mountains] - 0.65) * 1.2  # Moderate mountain expansion
 		
 		return heightmap
 	
@@ -327,10 +279,10 @@ class TerrainGenerator:
 					for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
 						diff = heightmap[y,x] - heightmap[y+dy,x+dx]
 						if diff > self.settings.erosion.min_slope:
-							# Transfer material
-							transfer = diff * 0.5
+							# Transfer material (conserving mass)
+							transfer = diff * 0.25  # Only transfer a portion
 							eroded[y,x] -= transfer
-							eroded[y+dy,x+dx] += transfer
+							eroded[y+dy,x+dx] += transfer  # Transfer full amount to neighbor
 			
 			heightmap = eroded
 			

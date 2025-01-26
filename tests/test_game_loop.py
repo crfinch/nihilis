@@ -6,6 +6,7 @@ from src.engine.message_manager import MessageManager
 from src.engine.game_state_manager import GameStateManager
 from src.engine.ui_manager import UIManager
 from src.engine.game_loop import GameLoop
+from src.utils.performance_monitor import PerformanceMonitor
 
 @pytest.fixture
 def message_manager():
@@ -23,11 +24,16 @@ def game_state_manager(message_manager):
 def ui_manager(display_manager, message_manager):
     return UIManager(display_manager, message_manager)
 
-@pytest.fixture
-def input_handler(game_state_manager, message_manager):
+@pytest.fixture(scope="module")
+def tcod_context():
     context = tcod.context.new()
+    yield context
+    context.close()
+
+@pytest.fixture
+def input_handler(game_state_manager, message_manager, tcod_context):
     return InputHandler(
-        context=context,
+        context=tcod_context,
         state_manager=game_state_manager,
         message_manager=message_manager,
         debug=False
@@ -40,7 +46,8 @@ def game_loop(display_manager, input_handler, game_state_manager, message_manage
         input_handler=input_handler,
         state_manager=game_state_manager,
         message_manager=message_manager,
-        ui_manager=ui_manager
+        ui_manager=ui_manager,
+        performance_monitor=PerformanceMonitor()
     )
 
 def test_game_loop_initialization(game_loop):

@@ -22,7 +22,7 @@ def input_handler(game_state_manager, message_manager):
         state_manager=game_state_manager,
         message_manager=message_manager,
         config_manager=config_manager,
-        debug=False
+        debug=True
     )
 
 def test_movement_keys(input_handler, game_state_manager):
@@ -58,13 +58,22 @@ def test_movement_keys(input_handler, game_state_manager):
 def test_diagonal_movement(input_handler, game_state_manager):
     game_state_manager.change_state(GameState.GAME_WORLD)
     
+    y_key = tcod.event.KeySym.y
+    print(f"Test KeySym.y value: {y_key} (type: {type(y_key)})")
+    
+    # Add debug output for movement keys
+    print(f"Movement keys: {input_handler.MOVEMENT_KEYS}")
+    print(f"Is y_key in movement keys? {y_key in input_handler.MOVEMENT_KEYS}")
+    
     event = tcod.event.KeyDown(
-        sym=tcod.event.KeySym.y,
+        sym=y_key,
         mod=tcod.event.KMOD_NONE,
         scancode=0,
         repeat=False
     )
     action = input_handler.dispatch(event)
+    
+    print(f"Resulting action: {action}")
     
     assert action is not None
     assert action.action_type == "move"

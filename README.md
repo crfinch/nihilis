@@ -19,4 +19,6 @@ Nihilis is the fusion of a world simulator, a procedural story generator, and a 
 |            |   0.7   | added procedural terrain, terrain templates, & terrain vis util |
 |            |   0.8   | expanded on templates, added more height variability         |
 |            |   0.9   | started work on biome generator                              |
+| 2025-01-25 |   0.10  | finished biomes & settlements; worldmap rudimentary but working   |
+| 2025-01-26 |   0.11  | local map now working; player movement enabled               |
 

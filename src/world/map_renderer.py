@@ -1,8 +1,9 @@
 from enum import Enum
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Set
 import numpy as np
 from src.world.biome_generator import BiomeType
 from src.world.settlement_generator import SettlementType
+import tcod.map
 
 class TerrainSymbols:
     """ASCII symbols for different terrain features."""
@@ -37,6 +38,12 @@ class TerrainSymbols:
 class MapRenderer:
     def __init__(self):
         self.symbols = TerrainSymbols()
+        # Add blocking terrain types
+        self.BLOCKING_TERRAIN = {
+            self.symbols.MOUNTAINS,
+            self.symbols.PEAKS,
+            self.symbols.FOREST
+        }
         
     def get_terrain_symbol(self, height: float, biome_type: Optional[BiomeType] = None) -> str:
         """Convert height and biome data into an ASCII symbol."""
@@ -271,3 +278,42 @@ class MapRenderer:
             SettlementType.FORTRESS: (178, 34, 34)     # Firebrick Red
         }
         return SETTLEMENT_COLORS.get(settlement_type, (255, 255, 255)) 
+
+    def calculate_los(self, ascii_map: list[list[str]], center_pos: Tuple[int, int], 
+                     view_height: int, view_width: int, radius: int = 20) -> Set[Tuple[int, int]]:
+        """Calculate visible positions from the center position.
+        
+        Args:
+            ascii_map: The map to calculate visibility for
+            center_pos: The center position (y,x) to calculate visibility from
+            view_height: Height of the view
+            view_width: Width of the view
+            radius: Maximum visibility radius (default: 10)
+        """
+        # Get actual map dimensions
+        map_height = len(ascii_map)
+        map_width = len(ascii_map[0]) if map_height > 0 else 0
+        
+        # Create a TCOD map for FOV calculations
+        tcod_map = tcod.map.Map(map_width, map_height)
+        
+        # Set walkable and transparent properties based on terrain
+        for y in range(map_height):
+            for x in range(map_width):
+                symbol = ascii_map[y][x]
+                is_blocking = symbol in self.BLOCKING_TERRAIN
+                # All tiles are walkable for FOV, but some block visibility
+                tcod_map.transparent[y, x] = not is_blocking
+                tcod_map.walkable[y, x] = True
+        
+        # HACK: modifying center_pos by 4/-4 works. One day we'll work out why. Now it just does.
+        tcod_map.compute_fov(center_pos[0]+4, center_pos[1]-4, radius=radius, algorithm=tcod.FOV_SHADOW)
+        
+        # Get visible positions
+        visible_positions = set()
+        for y in range(map_height):
+            for x in range(map_width):
+                if tcod_map.fov[y, x]:
+                    visible_positions.add((y, x))
+        
+        return visible_positions

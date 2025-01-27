@@ -155,4 +155,49 @@ def test_add_frame(map_renderer):
     # Check content preservation
     assert framed_map[1][1] == 'A'
     assert framed_map[1][2] == 'B'
-    assert framed_map[1][3] == 'C' 
+    assert framed_map[1][3] == 'C'
+
+def test_calculate_los(map_renderer):
+    """Test line of sight calculation."""
+    # Create a simple test map with some blocking terrain
+    ascii_map = [
+        ['.', '.', '♠', '.', '.'],
+        ['.', '.', '.', '.', '.'],
+        ['.', '.', '@', '.', '▲'],
+        ['.', '.', '.', '.', '.'],
+        ['.', '♠', '.', '.', '.']
+    ]
+    
+    center_pos = (2, 2)  # Center position (@)
+    visible_positions = map_renderer.calculate_los(ascii_map, center_pos, 5, 5)
+    
+    # Positions behind mountains and forests should not be visible
+    assert (0, 3) not in visible_positions  # Behind forest
+    assert (2, 4) not in visible_positions  # Behind mountain
+    
+    # Center and adjacent positions should be visible
+    assert (2, 2) in visible_positions  # Center
+    assert (1, 2) in visible_positions  # Adjacent
+    assert (2, 1) in visible_positions  # Adjacent 
+
+def test_calculate_los_with_mismatched_dimensions(map_renderer):
+    """Test LOS calculation with mismatched map and view dimensions."""
+    # Create a smaller map than the view dimensions
+    ascii_map = [
+        ['.', '.', '♠'],
+        ['.', '@', '.'],
+        ['▲', '.', '.']
+    ]
+    
+    # Try to calculate with larger view dimensions
+    center_pos = (1, 1)  # Center position (@)
+    visible_positions = map_renderer.calculate_los(ascii_map, center_pos, 5, 5)
+    
+    # Should still work with the smaller map
+    assert (1, 1) in visible_positions  # Center
+    assert (0, 1) in visible_positions  # Above center
+    assert (1, 0) in visible_positions  # Left of center
+    
+    # Positions outside map bounds should not be included
+    assert (4, 4) not in visible_positions
+    assert (3, 3) not in visible_positions 

@@ -1,5 +1,5 @@
 # src/engine/ui_manager.py
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Set
 import tcod
 import time
 
@@ -20,6 +20,8 @@ class UIManager:
 		self.debug = debug
 		self.performance_monitor = None
 		self.player = None
+		self.use_los = True  # Can be toggled
+		self.visible_positions: Set[Tuple[int, int]] = set()
         
 	def set_world_data(self, world_data):
 		"""Update the world data used for rendering maps."""
@@ -73,15 +75,32 @@ class UIManager:
 			view_height
 		)
 		
+		# Calculate visible positions if LOS is enabled
+		if self.use_los:
+			# Since the local map is centered on the player, they will be at the center of the view
+			view_center = (view_height // 2, view_width // 2)
+			self.visible_positions = self.map_renderer.calculate_los(
+				ascii_map,
+				view_center,  # Player is at the center of the view
+				view_height,
+				view_width
+			)
+		
 		# Draw frame around the map
 		console.draw_frame(0, 0, console.width, console.height, title=" World View ")
 		
 		# Draw the map to the console
 		for y in range(len(ascii_map)):
 			for x in range(len(ascii_map[0])):
+				# Skip if position is not visible and LOS is enabled
+				if self.use_los and (y, x) not in self.visible_positions:
+					console.print(x+1, y+1, ' ', fg=(0, 0, 0))
+					continue
+				
 				symbol = ascii_map[y][x]
 				# Get biome type from the biome_info dictionary
 				biome_type = biome_info.get(f"{y},{x}")
+				
 				# Draw the character with appropriate color
 				if symbol == self.player.char:
 					# Draw player in white
@@ -241,3 +260,7 @@ class UIManager:
 			
 			# Render messages
 			self.message_manager.render_messages(console)
+
+	def toggle_los(self):
+		"""Toggle line of sight rendering."""
+		self.use_los = not self.use_los

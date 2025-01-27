@@ -4,6 +4,7 @@ import numpy as np
 from typing import Dict, Optional
 from src.utils.configuration_manager import ConfigurationManager
 from scipy.ndimage import distance_transform_edt
+from src.world.biome_type import BiomeType
 
 class BiomeType(Enum):
 	OCEAN = auto()

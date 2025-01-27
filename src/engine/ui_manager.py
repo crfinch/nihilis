@@ -7,6 +7,7 @@ from src.engine.display_manager import DisplayManager
 from src.engine.message_manager import MessageManager
 from src.utils.performance_monitor import PerformanceMonitor
 from src.world.map_renderer import MapRenderer
+from src.world.biome_type import BiomeType
 
 class UIManager:
 	"""Manages UI layout and rendering."""
@@ -65,7 +66,7 @@ class UIManager:
 		center_pos = (int(self.player.y), int(self.player.x))
 		
 		# Render the local map centered on the player
-		ascii_map = self.map_renderer.render_local_map(
+		ascii_map, biome_info = self.map_renderer.render_local_map(
 			self.world_data,
 			center_pos,
 			view_width,
@@ -78,23 +79,67 @@ class UIManager:
 		# Draw the map to the console
 		for y in range(len(ascii_map)):
 			for x in range(len(ascii_map[0])):
-				# Get the appropriate color based on the terrain
 				symbol = ascii_map[y][x]
-				
-				# Draw the character
+				# Get biome type from the biome_info dictionary
+				biome_type = biome_info.get(f"{y},{x}")
+				# Draw the character with appropriate color
 				if symbol == self.player.char:
 					# Draw player in white
 					console.print(x+1, y+1, symbol, fg=(255, 255, 255))
 				else:
-					# Get terrain color based on the symbol
-					color = self._get_terrain_color(symbol)
+					color = self._get_terrain_color(symbol, biome_type)
 					console.print(x+1, y+1, symbol, fg=color)
             
 	def _render_status_bar(self):
 		"""Render the status bar with optional performance metrics."""
 		console = self.display_manager.get_console("status")
 		if console:
+			# Status indicator
 			console.print(1, 1, "Status: Active", fg=(0, 255, 0))
+			
+			# Get current biome if world data and player exist
+			current_biome = "Unknown"
+			current_location = None
+			if self.world_data and self.player:
+				# Get biome information
+				biome_map = self.world_data.get('biome_map')
+				if biome_map is not None:
+					# Get biome at player position
+					player_y, player_x = int(self.player.y), int(self.player.x)
+					if 0 <= player_y < biome_map.shape[0] and 0 <= player_x < biome_map.shape[1]:
+						biome_value = biome_map[player_y, player_x]
+						current_biome = BiomeType(biome_value).name.replace('_', ' ').title()
+				
+				# Debug print for settlements
+				settlements = self.world_data.get('settlements', [])
+				
+				# Check for settlements/POIs at player position
+				for settlement in settlements:
+					# Debug print for position comparison
+					if hasattr(settlement, 'position'):
+						settlement_y, settlement_x = settlement.position
+						if (int(settlement_y) == int(self.player.y) and 
+							int(settlement_x) == int(self.player.x)):
+							current_location = settlement
+							break
+			
+			# Construct status text
+			status_text = f"Biome: {current_biome}"
+			if current_location:
+				try:
+					location_type = current_location.type.name.replace('_', ' ').title()
+					location_name = current_location.name if current_location.name else ""
+					status_text += f" | {location_type}"
+					if location_name != "Unnamed":
+						status_text += f": {location_name}"
+				except Exception as e:
+					print(f"Error formatting location: {e}")
+			
+			# Print status text in the middle
+			status_x = (console.width - len(status_text)) // 2
+			console.print(status_x, 1, status_text, fg=(255, 255, 255))
+			
+			# HP display on the right
 			console.print(console.width - 20, 1, "HP: 100/100", fg=(255, 0, 0))
 			
 			# Add performance metrics in debug mode
@@ -122,7 +167,7 @@ class UIManager:
 		}
 		
 		# Render the world map with player
-		ascii_map = self.map_renderer.render_world_map(
+		ascii_map, biome_info = self.map_renderer.render_world_map(
 			render_data,
 			map_width,
 			map_height,
@@ -142,17 +187,25 @@ class UIManager:
 		for y in range(len(framed_map)):
 			for x in range(len(framed_map[0])):
 				char = framed_map[y][x]
+				# Get biome type for this position
+				biome_type = biome_info.get(f"{y},{x}")
 				# Set colors based on terrain type
-				fg = self._get_terrain_color(char)
+				fg = self._get_terrain_color(char, biome_type)
 				console.print(x, y, char, fg=fg)
             
-	def _get_terrain_color(self, char: str) -> Tuple[int, int, int]:
+	def _get_terrain_color(self, char: str, biome_type: Optional[BiomeType] = None) -> Tuple[int, int, int]:
 		"""Get the color for a terrain or settlement symbol."""
+		# Special case for forests in cold biomes
+		if char == '♠' and biome_type in [BiomeType.TUNDRA, BiomeType.COLD_DESERT]:
+			return (200, 200, 200)  # White-ish trees for cold forests
+		if char == '^' and biome_type in [BiomeType.TEMPERATE_FOREST, BiomeType.TEMPERATE_RAINFOREST, BiomeType.TROPICAL_RAINFOREST]:
+			return (139, 69, 19)  # Brown earthy mountains for warm forests
+		
 		TERRAIN_COLORS = {
 			'≈': (0, 148, 255),    # Deep water (blue)
 			'~': (65, 185, 255),   # Shallow water (light blue)
 			'.': (100, 220, 100),  # Plains (green)
-			'∩': (160, 160, 160),  # Hills (gray)
+			chr(239): (160, 160, 160),  # Hills (gray)
 			'^': (128, 128, 128),  # Mountains (dark gray)
 			'▲': (200, 200, 200),  # Peaks (light gray)
 			'♠': (0, 180, 0),      # Forest (dark green)

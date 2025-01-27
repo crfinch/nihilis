@@ -81,7 +81,7 @@ class MapRenderer:
 
     def render_world_map(self, world_data: Dict, width: int, height: int, 
                         discovery_mask: Optional[np.ndarray] = None,
-                        player = None) -> list[list[str]]:
+                        player = None) -> tuple[list[list[str]], dict]:
         """Render the world map at the specified dimensions."""
         heightmap = world_data['heightmap']
         biome_map = world_data.get('biome_map')
@@ -92,8 +92,9 @@ class MapRenderer:
         x_ratio = heightmap.shape[1] / width
         zoom_level = max(y_ratio, x_ratio)  # Higher ratio means more zoomed out
         
-        # Initialize the ASCII map
+        # Initialize the ASCII map and biome info
         ascii_map = [['' for _ in range(width)] for _ in range(height)]
+        biome_info = {}  # Store biome info for each position
         
         for y in range(height):
             for x in range(width):
@@ -114,7 +115,9 @@ class MapRenderer:
                     unique_biomes, counts = np.unique(region_biomes, return_counts=True)
                     dominant_biome = unique_biomes[np.argmax(counts)]
                     height_val = np.mean(heightmap[y_start:y_end, x_start:x_end])
-                    ascii_map[y][x] = self.get_terrain_symbol(height_val, BiomeType(dominant_biome))
+                    biome_type = BiomeType(dominant_biome)
+                    ascii_map[y][x] = self.get_terrain_symbol(height_val, biome_type)
+                    biome_info[f"{y},{x}"] = biome_type
                 else:
                     height_val = np.mean(heightmap[y_start:y_end, x_start:x_end])
                     ascii_map[y][x] = self.get_terrain_symbol(height_val)
@@ -168,11 +171,11 @@ class MapRenderer:
             if 0 <= map_y < height and 0 <= map_x < width:
                 ascii_map[map_y][map_x] = player.char
         
-        return ascii_map
+        return ascii_map, biome_info
 
     def render_local_map(self, world_data: Dict, 
                         center_pos: Tuple[int, int], 
-                        view_width: int, view_height: int) -> list[list[str]]:
+                        view_width: int, view_height: int) -> tuple[list[list[str]], dict]:
         """Render a local area map centered on the given position."""
         heightmap = world_data['heightmap']
         biome_map = world_data.get('biome_map')
@@ -185,9 +188,10 @@ class MapRenderer:
         x_start = max(0, x_center - view_width // 2)
         x_end = min(heightmap.shape[1], x_center + view_width // 2)
         
-        # Initialize the ASCII map
+        # Initialize the ASCII map and biome info
         ascii_map = [[self.symbols.UNKNOWN for _ in range(view_width)] 
                     for _ in range(view_height)]
+        biome_info = {}  # Store biome info for each position
         
         # Fill in the visible area
         for y in range(y_start, y_end):
@@ -196,10 +200,10 @@ class MapRenderer:
                 map_x = x - x_start
                 
                 height_val = heightmap[y, x]
-                biome = biome_map[y, x] if biome_map is not None else None
-                
-                if biome is not None:
-                    ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val, BiomeType(biome))
+                if biome_map is not None:
+                    biome_type = BiomeType(biome_map[y, x])
+                    ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val, biome_type)
+                    biome_info[f"{map_y},{map_x}"] = biome_type
                 else:
                     ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val)
         
@@ -221,7 +225,7 @@ class MapRenderer:
         if 0 <= center_y < len(ascii_map) and 0 <= center_x < len(ascii_map[0]):
             ascii_map[center_y][center_x] = '@'
         
-        return ascii_map
+        return ascii_map, biome_info
 
     def add_frame(self, ascii_map: list[list[str]]) -> list[list[str]]:
         """Add a frame around the ASCII map."""

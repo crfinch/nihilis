@@ -18,14 +18,14 @@ class TerrainSymbols:
     TUNDRA = ','       # Tundra/snow '⚬'
     UNKNOWN = '?'       # Unexplored areas
     BEACH = ':'         # Beach/shore
-    CAPITAL = '*'      # Capital city 
-    CITY = '■'         # Major city 
-    TOWN = '□'         # Minor city 
-    VILLAGE = '○'      # Village
-    RUINS = '∅'        # Ruins
-    DUNGEON = '◊'      # Dungeon
-    TEMPLE = '†'       # Temple
-    FORTRESS = '▣'     # Fortress
+    CAPITAL = chr(0x263C)        # Capital city 
+    CITY = '*'         # Major city 
+    TOWN = chr(0x2219)         # Minor city 
+    VILLAGE = chr(0x2302)      # Village
+    RUINS = chr(0x03C6)        # Ruins
+    DUNGEON = chr(0x03A9)      # Dungeon
+    TEMPLE = '+'       # Temple
+    FORTRESS = chr(0x25D9)     # Fortress
 
     # Frame characters
     FRAME_TOP_LEFT = '┌'
@@ -102,6 +102,7 @@ class MapRenderer:
         # Initialize the ASCII map and biome info
         ascii_map = [['' for _ in range(width)] for _ in range(height)]
         biome_info = {}  # Store biome info for each position
+        metadata = {}  # Store settlement metadata
         
         for y in range(height):
             for x in range(width):
@@ -188,49 +189,50 @@ class MapRenderer:
         biome_map = world_data.get('biome_map')
         settlements = world_data.get('settlements', [])
         
-        # Calculate view boundaries
+        # Calculate view boundaries in world coordinates
         y_center, x_center = center_pos
-        y_start = max(0, y_center - view_height // 2)
-        y_end = min(heightmap.shape[0], y_center + view_height // 2)
-        x_start = max(0, x_center - view_width // 2)
-        x_end = min(heightmap.shape[1], x_center + view_width // 2)
+        half_height = view_height // 2
+        half_width = view_width // 2
         
-        # Initialize the ASCII map and biome info
+        # Initialize the ASCII map with UNKNOWN symbols
         ascii_map = [[self.symbols.UNKNOWN for _ in range(view_width)] 
                     for _ in range(view_height)]
         biome_info = {}  # Store biome info for each position
         
         # Fill in the visible area
-        for y in range(y_start, y_end):
-            for x in range(x_start, x_end):
-                map_y = y - y_start
-                map_x = x - x_start
-                
-                height_val = heightmap[y, x]
-                if biome_map is not None:
-                    biome_type = BiomeType(biome_map[y, x])
-                    ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val, biome_type)
-                    biome_info[f"{map_y},{map_x}"] = biome_type
-                else:
-                    ascii_map[map_y][map_x] = self.get_terrain_symbol(height_val)
+        for view_y in range(view_height):
+            world_y = y_center - half_height + view_y
+            if 0 <= world_y < heightmap.shape[0]:  # Only process if within world bounds
+                for view_x in range(view_width):
+                    world_x = x_center - half_width + view_x
+                    if 0 <= world_x < heightmap.shape[1]:  # Only process if within world bounds
+                        height_val = heightmap[world_y, world_x]
+                        if biome_map is not None:
+                            biome_type = BiomeType(biome_map[world_y, world_x])
+                            ascii_map[view_y][view_x] = self.get_terrain_symbol(height_val, biome_type)
+                            biome_info[f"{view_y},{view_x}"] = biome_type
+                        else:
+                            ascii_map[view_y][view_x] = self.get_terrain_symbol(height_val)
         
         # Add settlements that are within view
         for settlement in settlements:
-            # Convert settlement position to map coordinates
-            map_y = settlement.position[0] - y_start
-            map_x = settlement.position[1] - x_start
+            # Convert settlement position to view coordinates
+            view_y = settlement.position[0] - (y_center - half_height)
+            view_x = settlement.position[1] - (x_center - half_width)
             
             # Only draw if within view bounds
-            if 0 <= map_y < view_height and 0 <= map_x < view_width:
-                # Get the appropriate symbol based on settlement type
-                symbol = getattr(self.symbols, settlement.type.name)
-                ascii_map[map_y][map_x] = symbol
+            if 0 <= view_y < view_height and 0 <= view_x < view_width:
+                # Only draw if the settlement is in valid world coordinates
+                world_y = y_center - half_height + view_y
+                world_x = x_center - half_width + view_x
+                if 0 <= world_y < heightmap.shape[0] and 0 <= world_x < heightmap.shape[1]:
+                    symbol = getattr(self.symbols, settlement.type.name)
+                    ascii_map[view_y][view_x] = symbol
         
         # Place player at center (on top of everything else)
         center_y = view_height // 2
         center_x = view_width // 2
-        if 0 <= center_y < len(ascii_map) and 0 <= center_x < len(ascii_map[0]):
-            ascii_map[center_y][center_x] = '@'
+        ascii_map[center_y][center_x] = '@'
         
         return ascii_map, biome_info
 
@@ -280,7 +282,7 @@ class MapRenderer:
         return SETTLEMENT_COLORS.get(settlement_type, (255, 255, 255)) 
 
     def calculate_los(self, ascii_map: list[list[str]], center_pos: Tuple[int, int], 
-                     view_height: int, view_width: int, radius: int = 20) -> Set[Tuple[int, int]]:
+                     view_height: int, view_width: int, radius: int = 30) -> Set[Tuple[int, int]]:
         """Calculate visible positions from the center position.
         
         Args:

@@ -5,20 +5,27 @@
 
 Nihilis is the fusion of a world simulator, a procedural story generator, and a traditional OSR-styled role-playing game. Gameplay takes place in one of several epochs, from the tribal beginnings of a world all the way through its ultimate fall to the shadow, and player impact on the world is emphasized through systems like player landholding and civics, persistent NPC relationships, trade and political system emulation, and more.
 
-## version history
+## milestone version history
 
-|       date | version | description                                                  |
-| ---------: | :-----: | ------------------------------------------------------------ |
-| 2024-11-08 |   0.0   | initial commits only                                         |
-|            |   0.1   | working display manager                                      |
-| 2024-11-09 |   0.2   | working input manager & tests                                |
-|            |   0.3   | working message manager & scrolling message console          |
-|            |   0.4   | working game state management                                |
-|            |   0.5   | broke ui and game loop into their own modules; added tests for all |
-|            |   0.6   | added configuration management, performance monitoring, and keybinds |
-|            |   0.7   | added procedural terrain, terrain templates, & terrain vis util |
-|            |   0.8   | expanded on templates, added more height variability         |
-|            |   0.9   | started work on biome generator                              |
-| 2025-01-25 |   0.10  | finished biomes & settlements; worldmap rudimentary but working   |
-| 2025-01-26 |   0.11  | local map now working; player movement enabled               |
+### phase 1: Core Systems
+#### milestone 1: Basic Engine: complete (2024-11-09)
+Complete 2024-11-09: window initialization, input handling, main game loop, console layer management, logging, game state management, ui management, component integration, performance monitoring, configuration management, and message logging.
 
+#### milestone 2: Basic World Generation & Interaction
+- Heightmap generation: complete 2024-11-09
+- Biome assignment: complete 2025-01-25
+- Settlement generation: complete 2025-01-25
+- Worldmap visualization: complete 2025-01-25
+- Local map visualization: complete 2025-01-25
+- World state serialization: tbc
+- Local region/poi map zoom in/out: tbc
+- Complete testing framework: tbc
+
+#### milestone 3: Historical Framework
+- Mythic epoch generation: tbc
+- Age of Dream generation: tbc
+- Age of Kings generation: tbc
+- Age of Empire generation: tbc
+- Age of Corruption generation: tbc
+- Age of Collapse generation: tbc
+- Age of Shadow generation: tbc

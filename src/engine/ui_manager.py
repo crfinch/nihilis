@@ -129,12 +129,10 @@ class UIManager:
 						biome_value = biome_map[player_y, player_x]
 						current_biome = BiomeType(biome_value).name.replace('_', ' ').title()
 				
-				# Debug print for settlements
-				settlements = self.world_data.get('settlements', [])
-				
 				# Check for settlements/POIs at player position
+				settlements = self.world_data.get('settlements', [])
 				for settlement in settlements:
-					# Debug print for position comparison
+					# Check if settlement has position attribute
 					if hasattr(settlement, 'position'):
 						settlement_y, settlement_x = settlement.position
 						if (int(settlement_y) == int(self.player.y) and 
@@ -143,13 +141,16 @@ class UIManager:
 							break
 			
 			# Construct status text
-			status_text = f"Biome: {current_biome}"
+			status_text = f"{current_biome}"
 			if current_location:
 				try:
 					location_type = current_location.type.name.replace('_', ' ').title()
-					location_name = current_location.name if current_location.name else ""
+					# Try different ways to get the name
+					location_name = getattr(current_location, 'name', None) or \
+								  getattr(current_location, 'title', None) or \
+								  getattr(current_location, 'label', None)
 					status_text += f" | {location_type}"
-					if location_name != "Unnamed":
+					if location_name:  # Simply check if name exists
 						status_text += f": {location_name}"
 				except Exception as e:
 					print(f"Error formatting location: {e}")
@@ -206,6 +207,9 @@ class UIManager:
 		for y in range(len(framed_map)):
 			for x in range(len(framed_map[0])):
 				char = framed_map[y][x]
+				# Convert to string if it's an integer
+				if isinstance(char, int):
+					char = chr(char)
 				# Get biome type for this position
 				biome_type = biome_info.get(f"{y},{x}")
 				# Set colors based on terrain type
@@ -232,9 +236,13 @@ class UIManager:
 			',': (200, 200, 200),  # Tundra (white)
 			':': (255, 240, 150),  # Beach (sand)
 			'?': (100, 100, 100),  # Unknown (dark gray)
-			'*': (255, 215, 0),    # Capital city (gold)
-			'■': (220, 220, 220),  # Major city (light gray)
-			'□': (180, 180, 180),  # Minor city (darker gray)
+			chr(0x263C): (255, 215, 0),    # Capital city (gold)
+			'*': (215, 175, 220),  # Major city (mustard)
+			chr(0x2219): (180, 180, 180),  # Minor city (darker gray)
+			chr(0x2302): (180, 180, 180),  # Village (darker gray)
+			chr(0x03C6): (180, 70, 70),  # Ruins (darker gray)
+			chr(0x03A9): (220, 70, 70),  # Dungeon (darker gray)
+			'+': (150, 15, 225),  # Temple (mustard)
 			'@': (255, 128, 255),  # Player character (lavender)
 			# Frame characters
 			'┌': (255, 255, 255),  # White

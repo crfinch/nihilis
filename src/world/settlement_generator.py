@@ -1,10 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 import numpy as np
 from typing import List, Tuple, Dict, Set
 from scipy.ndimage import distance_transform_edt, gaussian_filter
 from src.world.biome_generator import BiomeType
 import logging
+from .name_generator import NameGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +23,44 @@ class SettlementType(Enum):
 class Settlement:
     type: SettlementType
     position: Tuple[int, int]
-    name: str = ""
+    name: str = field(default="")
     population: int = 0
     importance: float = 0.0
+
+    def generate_name(self, name_generator: NameGenerator):
+        """Generate a name for this settlement"""
+        # Map settlement types to name types
+        name_type_mapping = {
+            SettlementType.CAPITAL: "settlement",
+            SettlementType.CITY: "settlement",
+            SettlementType.TOWN: "settlement",
+            SettlementType.VILLAGE: "settlement",
+            SettlementType.RUINS: "ruins",
+            SettlementType.DUNGEON: "dungeon",
+            SettlementType.TEMPLE: "temple",
+            SettlementType.FORTRESS: "fortress"
+        }
+        
+        # Try to generate a name, fall back to a default if it fails
+        try:
+            self.name = name_generator.generate_name(
+                epoch="empire",  # Default epoch, can be parameterized
+                name_type=name_type_mapping[self.type]
+            )
+        except (KeyError, ValueError) as e:
+            logger.warning(f"Failed to generate name for {self.type}: {e}")
+            # Fallback names based on type
+            fallback_names = {
+                SettlementType.CAPITAL: "Capital City",
+                SettlementType.CITY: "Great City",
+                SettlementType.TOWN: "Small Town",
+                SettlementType.VILLAGE: "Village",
+                SettlementType.RUINS: "Ancient Ruins",
+                SettlementType.DUNGEON: "Dark Dungeon",
+                SettlementType.TEMPLE: "Holy Temple",
+                SettlementType.FORTRESS: "Mighty Fortress"
+            }
+            self.name = fallback_names.get(self.type, "Unknown Settlement")
 
 class SettlementGenerator:
     def __init__(self, rng: np.random.Generator):
@@ -105,11 +141,14 @@ class SettlementGenerator:
                            num_fortresses: int = 4) -> List[Settlement]:
         """Generate settlements based on terrain and biome data."""
 
-            # Store the RNG state
+        # Store the RNG state
         rng_state = self.rng.bit_generator.state
 
         settlements: List[Settlement] = []
         habitability = self._calculate_habitability(heightmap, biome_map)
+        
+        # Initialize name generator
+        name_generator = NameGenerator(self.rng)
         
         # Generate settlements in order of importance
         settlement_counts = {
@@ -153,6 +192,8 @@ class SettlementGenerator:
                             position=pos,
                             importance=type_habitability[pos]
                         )
+                        # Generate name for the settlement
+                        settlement.generate_name(name_generator)
                         settlements.append(settlement)
                         
                         # Mark area as less habitable for future settlements

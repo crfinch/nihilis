@@ -30,12 +30,14 @@ class DisplayManager:
 			from src.utils.configuration_manager import ConfigurationManager
 			self.display_config = ConfigurationManager().get_display_config()
 		
-		# Load the tileset using configuration
+		# Modify the tileset loading section
+		charmap = tcod.tileset.CHARMAP_CP437.copy()
+
 		self.tileset = tcod.tileset.load_tilesheet(
 			self.display_config.font_path,
 			self.display_config.font_width,
 			self.display_config.font_height,
-			tcod.tileset.CHARMAP_CP437
+			charmap
 		)
 		
 		# Create the main window

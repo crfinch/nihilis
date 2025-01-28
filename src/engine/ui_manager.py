@@ -150,8 +150,12 @@ class UIManager:
 								  getattr(current_location, 'title', None) or \
 								  getattr(current_location, 'label', None)
 					status_text += f" | {location_type}"
-					if location_name:  # Simply check if name exists
-						status_text += f": {location_name}"
+					if location_name:  # Check if name exists
+						# Only show the actual name if the player has visited this location
+						if self.player.has_visited(current_location.position):
+							status_text += f": {location_name}"
+						else:
+							status_text += ": Unexplored"
 				except Exception as e:
 					print(f"Error formatting location: {e}")
 			

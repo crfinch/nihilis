@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Tuple
+from dataclasses import dataclass, field
+from typing import Tuple, Set
 
 @dataclass
 class Player:
@@ -11,11 +11,13 @@ class Player:
         y (int): The player's y-coordinate in the world
         char (str): The character used to represent the player on the map
         color (Tuple[int, int, int]): RGB color tuple for rendering the player
+        visited_locations (Set[Tuple[int, int]]): Set of coordinates the player has visited
     """
     x: int
     y: int
     char: str = "@"
     color: Tuple[int, int, int] = (255, 200, 255)  # lavender color by default
+    visited_locations: Set[Tuple[int, int]] = field(default_factory=set)
     
     def move(self, dx: int, dy: int) -> None:
         """
@@ -27,6 +29,7 @@ class Player:
         """
         self.x += dx
         self.y += dy
+        self.visited_locations.add((self.x, self.y))
     
     def teleport(self, x: int, y: int) -> None:
         """
@@ -38,8 +41,21 @@ class Player:
         """
         self.x = x
         self.y = y
+        self.visited_locations.add((x, y))
     
     @property
     def position(self) -> Tuple[int, int]:
         """Get the current position of the player."""
         return (self.x, self.y)
+    
+    def has_visited(self, position: Tuple[int, int]) -> bool:
+        """
+        Check if the player has visited a specific position.
+        
+        Args:
+            position (Tuple[int, int]): The position to check
+            
+        Returns:
+            bool: True if the player has visited this position, False otherwise
+        """
+        return position in self.visited_locations
